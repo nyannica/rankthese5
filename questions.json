@@ -90,6 +90,8 @@
     {"q":"How do you prefer to play 'Party Games'?","opts":["Strictly to win","To make everyone laugh","To sabotage the leader","Quietly observing the chaos","I'm only here for the snacks"]},
     {"q":"Rank these 'Remake/Remaster' opinions:","opts":["Love seeing classics updated","Waste of time; make new games","Only if the original is unplayable","Better than the originals","I prefer the original graphics"]},
     {"q":"Which 'Dungeon' type is your favorite?","opts":["Ancient Ruins","High-tech Labs","Creepy Sewers","Forest/Nature Caves","Fire/Lava Temple"]},
+    "q": "Which RPG class archetype do you feel is the best (more to less)?","opts": ["The Tank (High survivability)", "The Mage (Power and utility)", "The Assassin (Speed and precision)", "The Paladin (Support and strength)", "The Summoner (Strategy and pets)"]
+    },
     {"q":"Rank these 'Magic' types:","opts":["Fire/Explosions","Ice/Control","Dark/Necromancy","Light/Healing","Nature/Plants"]},
     {"q":"How do you handle 'In-game Books' (Lore notes)?","opts":["Read them all in the moment","Pick them up and never read","Ignore them entirely","Read them at the end of the day","Only read if there's a reward"]},
     {"q":"Rank these 'Social' gaming moments:","opts":["Winning a match together","Exploring a world together","A shared emotional cutscene","A hilarious glitch together","Competitive 1v1s"]},
