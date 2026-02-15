@@ -71,18 +71,21 @@ const bank={
     romance:[
         {q:"Ideal First Date?",opts:["Fine Dining","Quiet Coffee","Gaming Arcade","Sunset Picnic","Movie Night"]},
         {q:"Best Gesture?",opts:["Love Letter","Surprise Trip","Home Cooked Meal","Thoughtful Gift","Warm Hug"]},
-        {q:"Physical Touch?",opts:["Holding Hands","Long Hugs","Forehead Kisses","Cuddling","Massages"]}
+        {q:"Physical Touch?",opts:["Holding Hands","Long Hugs","Forehead Kisses","Cuddling","Massages"]},
+        {q:"Honeymoon?",opts:["Tropical Island","European City","Mountain Cabin","Theme Park","Cruise"]}
     ],
     personal:[
         {q:"Life Phase?",opts:["Childhood","Teen Years","Young Adult","Established Career","Retirement"]},
-        {q:"Biggest Fear?",opts:["Failure","Being Alone","Physical Pain","Large Crowds","Loss of Control"]}
+        {q:"Biggest Fear?",opts:["Failure","Being Alone","Physical Pain","Large Crowds","Loss of Control"]},
+        {q:"Social Battery?",opts:["Introvert","Extrovert","Ambivert","Selective Socialite","Homebody"]}
     ]
 };
 
 let peer, conn, role, idx=0, mode="romance", max=5, truth=null, locked=false, total=0;
 
 function show(screenId){
-    document.querySelectorAll(".game-screen").forEach(s => s.classList.add("hidden"));
+    const screens = document.querySelectorAll(".game-screen");
+    screens.forEach(s => s.classList.add("hidden"));
     document.getElementById(screenId).classList.remove("hidden");
 }
 
@@ -114,7 +117,10 @@ function setupConnection(){
         if(d.type==="START"){ mode=d.mode; max=d.max; enterGame(); }
         if(d.type==="TRUTH"){ truth=d.order; ui(); }
         if(d.type==="GUESS"){ reveal(truth, d.order); }
-        if(d.type==="NEXT"){ idx=d.i; if(idx>=max) showFinal(); else round(); }
+        if(d.type==="NEXT"){ 
+            idx = d.i; 
+            if(idx >= max) showFinal(); else round(); 
+        }
     });
 }
 
@@ -122,19 +128,24 @@ function enterGame(){ round(); }
 
 function round(){
     truth=null; locked=false;
-    const qSet=bank[mode]; const q=qSet[idx%qSet.length];
+    const qSet=bank[mode]; 
+    const q=qSet[idx % qSet.length];
     document.getElementById("question").innerText=q.q;
     document.getElementById("round").innerText=`Question ${idx+1} of ${max}`;
-    render(q.opts); ui(); show("screen-game");
+    render(q.opts); 
+    ui(); 
+    show("screen-game"); // Force screen switch
 }
 
 function ui(){
     const chooser=(idx%2===0 && role==="host")||(idx%2!==0 && role==="guest");
-    const r=document.getElementById("role"); const b=document.getElementById("submit");
+    const r=document.getElementById("role"); 
+    const b=document.getElementById("submit");
     r.innerText=chooser?"Setting the Truth":(truth?"Your Turn to Guess":"Partner is choosing...");
     r.style.color=chooser?"var(--p2)":"var(--p1)";
     b.classList.toggle("hidden",!chooser && !truth);
-    b.disabled=locked; b.innerText=locked?"Locked":"Lock Order";
+    b.disabled=locked; 
+    b.innerText=locked?"Locked":"Lock Order";
 }
 
 function sendOrder(){
@@ -156,17 +167,21 @@ function reveal(t,g){
         div.innerHTML=`<span>${x}</span><span>Ranked #${gIdx+1}</span>`;
         list.appendChild(div);
     });
-    const s=Math.round((pts/10)*100); total+=s;
+    const s=Math.round((pts/10)*100); 
+    total+=s;
     document.getElementById("res-score").innerText=s+"% Match";
     
-    const ctrl=document.getElementById("controls"); ctrl.innerHTML="";
+    const ctrl=document.getElementById("controls"); 
+    ctrl.innerHTML="";
     const btn=document.createElement("button");
     if(role==="host"){
         btn.className="btn-main"; 
         btn.innerText=idx+1>=max?"Final Results":"Next Round →";
         btn.onclick=handleNext; 
     } else {
-        btn.className="btn-wait"; btn.innerText="Waiting for Host..."; btn.disabled=true;
+        btn.className="btn-wait"; 
+        btn.innerText="Waiting for Host..."; 
+        btn.disabled=true;
     }
     ctrl.appendChild(btn); 
     show("screen-results");
@@ -179,7 +194,10 @@ function handleNext(){
     if(idx >= max) showFinal(); else round();
 }
 
-function showFinal(){ show("screen-final"); document.getElementById("final").innerText=Math.round(total/max)+"%"; }
+function showFinal(){ 
+    show("screen-final"); 
+    document.getElementById("final").innerText=Math.round(total/max)+"%"; 
+}
 
 // Drag Logic
 let active=null,startY=0;
