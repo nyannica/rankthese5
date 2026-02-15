@@ -3,21 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DuoRanker - Synced Multiplayer</title>
+<title>DuoRanker Multiplayer</title>
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
 <style>
-:root { --p1:#6366f1; --p2:#ec4899; --bg:#0f172a; --card:#1e293b; --text:#f8fafc; --success:#22c55e; --near:#eab308; }
+:root{
+--p1:#6366f1;
+--p2:#ec4899;
+--bg:#0f172a;
+--card:#1e293b;
+--text:#f8fafc;
+--near:#eab308;
+--correct:#22c55e;
+--close:#facc15;
+--wrong:#ef4444;
+}
 
 body{
-font-family:'Segoe UI',system-ui;
+margin:0;
+font-family:system-ui;
 background:var(--bg);
 color:var(--text);
 display:flex;
 justify-content:center;
-padding:1rem;
+align-items:center;
 min-height:100vh;
-margin:0;
+padding:1rem;
+overflow:hidden;
 }
 
 .container{
@@ -25,455 +36,335 @@ max-width:480px;
 width:100%;
 background:var(--card);
 padding:1.5rem;
-border-radius:28px;
+border-radius:24px;
 text-align:center;
-align-self:center;
-box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);
-}
-
-.role-banner{
-padding:10px;
-border-radius:12px;
-font-size:.85rem;
-font-weight:800;
-text-transform:uppercase;
-margin-bottom:15px;
-}
-
-.role-chooser{background:rgba(236,72,153,.1);border:1px solid var(--p2);color:var(--p2);}
-.role-guesser{background:rgba(99,102,241,.1);border:1px solid var(--p1);color:var(--p1);}
-
-.rank-item{
-background:#334155;
-margin-bottom:10px;
-padding:1rem;
-border-radius:14px;
-cursor:grab;
-display:flex;
-align-items:center;
-text-align:left;
-font-size:.95rem;
-}
-
-.rank-item.dragging{opacity:.4;}
-
-button{
-width:100%;
-padding:1.1rem;
-border-radius:14px;
-border:none;
-font-weight:bold;
-cursor:pointer;
-font-size:1rem;
-margin-top:10px;
-}
-
-.btn-main{background:var(--p1);color:white;}
-.btn-wait{background:#0f172a;color:#475569;border:1px solid #334155;cursor:not-allowed;}
-
-select,input{
-width:100%;
-padding:12px;
-border-radius:12px;
-background:#0f172a;
-color:white;
-border:1px solid #475569;
-margin-bottom:15px;
-box-sizing:border-box;
+box-shadow:0 20px 50px rgba(0,0,0,0.3);
 }
 
 .hidden{display:none;}
+button{
+width:100%;
+padding:1rem;
+border:none;
+border-radius:12px;
+font-weight:bold;
+cursor:pointer;
+margin-top:8px;
+transition:0.2s;
+}
+.btn-main{background:var(--p1);color:white;}
+.btn-main:active{transform:scale(0.97);}
+.btn-wait{background:#111827;color:#555;border:1px solid #333;cursor:not-allowed;}
 
-.fade-in{animation:fadeIn .25s ease-in-out;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+input,select{
+width:100%;
+padding:12px;
+margin-bottom:10px;
+border-radius:10px;
+background:#111827;
+color:white;
+border:1px solid #333;
+box-sizing:border-box;
+font-size:1rem;
+}
+
+#rank-list{
+position:relative;
+margin:1.5rem 0;
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+.rank-item{
+background:#334155;
+padding:16px;
+border-radius:14px;
+cursor:grab;
+touch-action:none;
+text-align:left;
+user-select:none;
+border:1px solid rgba(255,255,255,0.05);
+display:flex;
+align-items:center;
+transition:transform 0.25s cubic-bezier(0.25, 1, 0.5, 1), box-shadow 0.25s;
+}
+.rank-item::before{
+content:"☰";
+margin-right:12px;
+opacity:0.3;
+}
+.rank-item.active{
+transform:scale(1.05) translateY(0);
+box-shadow:0 15px 40px rgba(0,0,0,0.6);
+background:#475569;
+cursor:grabbing;
+z-index:100;
+transition:none;
+}
+
+.role-badge{
+font-size:0.75rem;
+text-transform:uppercase;
+font-weight:900;
+letter-spacing:1.5px;
+margin-bottom:8px;
+}
+
+.result-item{
+padding:12px;
+border-radius:12px;
+margin-bottom:6px;
+text-align:left;
+}
+.correct{background:var(--correct);}
+.close{background:var(--close);}
+.wrong{background:var(--wrong);}
 </style>
 </head>
-
 <body>
 
 <div class="container">
 
-<div id="connection-status" style="font-size:.8rem;color:#eab308;margin-bottom:8px;">
-Disconnected
-</div>
+<div id="status" style="font-size:.7rem;color:var(--near);margin-bottom:10px;opacity:.7;">Disconnected</div>
 
+<!-- START SCREEN -->
 <div id="screen-start">
 <h1>DuoRanker</h1>
-
 <select id="mode-select">
-<option value="romance">Romance</option>
-<option value="personal">Personal</option>
+<option value="romance">Romance Mode</option>
+<option value="personal">Personal Mode</option>
 </select>
-
 <select id="length-select">
 <option value="10">10 Questions</option>
 <option value="20">20 Questions</option>
 <option value="30">30 Questions</option>
 </select>
-
 <button class="btn-main" onclick="startHost()">Host Game</button>
-
-<div style="margin:15px;color:#475569;">— OR —</div>
-
-<input type="text" id="join-id" placeholder="Code">
-<button style="background:#334155;color:white;" onclick="startJoin()">Join Partner</button>
+<div style="margin:15px;color:#475569;font-size:.8rem;">OR</div>
+<input id="join-id" placeholder="Partner's Code" type="tel">
+<button style="background:#334155;color:white;" onclick="startJoin()">Join Game</button>
 </div>
 
-<div id="screen-waiting" class="hidden">
-<h3>Room Code</h3>
-<h1 id="my-id-display" style="font-size:3.5rem;color:var(--p1);margin:0;">----</h1>
+<!-- WAIT SCREEN -->
+<div id="screen-wait" class="hidden">
+<p>Room Created!</p>
+<h1 id="room-id" style="font-size:3.5rem;color:var(--p1);letter-spacing:4px;">----</h1>
+<p style="opacity:.7;">Waiting for partner...</p>
 </div>
 
+<!-- GAME SCREEN -->
 <div id="screen-game" class="hidden">
-<div id="role-indicator" class="role-banner">Role</div>
-<div id="timer" style="font-size:1.2rem;font-weight:bold;color:#eab308;">20s</div>
-<h2 id="question-text">...</h2>
+<div id="role" class="role-badge"></div>
+<h2 id="question"></h2>
 <div id="rank-list"></div>
-<button id="submit-btn" class="btn-main" onclick="sendOrder()">Lock Order</button>
-<p id="round-counter" style="font-size:.8rem;color:#64748b;"></p>
+<button id="submit" class="btn-main" onclick="sendOrder()">Lock My Order</button>
+<p id="round" style="font-size:.7rem;color:#64748b;"></p>
 </div>
 
+<!-- RESULTS -->
 <div id="screen-results" class="hidden">
-<h2 id="score-display">0%</h2>
-<div id="host-control-area"></div>
+<p>Match Score</p>
+<h1 id="score" style="font-size:3rem;color:var(--p2);">0%</h1>
+<div id="results-list"></div>
+<div id="controls" style="margin-top:10px;"></div>
 </div>
 
+<!-- FINAL -->
 <div id="screen-final" class="hidden">
-<h1>Game Over</h1>
-<h1 id="final-score">0%</h1>
-<button class="btn-main" onclick="location.reload()">Home</button>
+<p>Overall Connection</p>
+<h1 id="final" style="font-size:6rem;color:var(--p1);">0%</h1>
+<button class="btn-main" onclick="location.reload()">New Game</button>
 </div>
 
 </div>
-
-<audio id="click-sfx" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
-<audio id="score-sfx" src="https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar_boing.ogg"></audio>
 
 <script>
-/* ---------- QUESTION BANK ---------- */
-
-const questionBank={
+const bank={
 romance:[
-{q:"Ideal First Date?",opts:["Dinner","Coffee","Arcade","Picnic","Movie"]},
-{q:"Best Gesture?",opts:["Letter","Trip","Cooking","Gifts","Hug"]}
+{q:"Ideal First Date?",opts:["Fine Dining","Quiet Coffee","Gaming Arcade","Sunset Picnic","Movie Night"]},
+{q:"Best Gesture?",opts:["Love Letter","Surprise Trip","Home Cooked Meal","Thoughtful Gift","Warm Hug"]},
+{q:"Physical Touch?",opts:["Holding Hands","Long Hugs","Forehead Kisses","Cuddling","Massages"]},
+{q:"Honeymoon?",opts:["Tropical Island","European City","Mountain Cabin","Theme Park","Cruise"]},
+{q:"Love Language?",opts:["Words of Affirmation","Acts of Service","Receiving Gifts","Quality Time","Physical Touch"]}
 ],
 personal:[
-{q:"Life Phase?",opts:["Childhood","Teen","Adult","Career","Retirement"]},
-{q:"Biggest Fear?",opts:["Failure","Alone","Pain","Crowd","Loss"]}
+{q:"Life Phase?",opts:["Childhood","Teen Years","Young Adult","Established Career","Retirement"]},
+{q:"Biggest Fear?",opts:["Failure","Being Alone","Physical Pain","Large Crowds","Loss of Control"]},
+{q:"Social Battery?",opts:["Introvert","Extrovert","Ambivert","Selective Socialite","Homebody"]},
+{q:"Morning Routine?",opts:["Hit Snooze","Check Phone","Gym/Run","Quiet Coffee","Straight to Work"]}
 ]
 };
 
-/* ---------- GLOBAL STATE ---------- */
+let peer,conn;
+let role,idx=0,mode="romance",max=10;
+let truth=null,locked=false,total=0;
+let hostSubmitted=false, guestSubmitted=false;
 
-let peer,conn,myRole;
-let currentIdx=0,mode="romance",maxRounds=10;
-let truth=null,locked=false,totalScore=0;
-let reconnectAttempts=0;
-let roundTimer=null,timeLeft=20,paused=false;
+const statusEl=document.getElementById("status");
 
-/* ---------- AUDIO ---------- */
+function setStatus(t,c="#eab308"){statusEl.innerText=t; statusEl.style.color=c;}
+function show(id){document.querySelectorAll(".container>div").forEach(d=>d.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");}
 
-function playSound(id){
-const s=document.getElementById(id);
-if(s){s.currentTime=0;s.play();}
-}
-
-/* ---------- NETWORK ---------- */
-
+/* HOST */
 function startHost(){
 mode=document.getElementById("mode-select").value;
-maxRounds=parseInt(document.getElementById("length-select").value);
-
-peer=new Peer(Math.floor(1000+Math.random()*9000).toString());
-myRole="host";
-
+max=parseInt(document.getElementById("length-select").value);
+peer=new Peer(Math.floor(1000+Math.random()*9000)+"");
+role="host";
 peer.on("open",id=>{
-document.getElementById("my-id-display").innerText=id;
-show("screen-waiting");
+document.getElementById("room-id").innerText=id;
+show("screen-wait");
+setStatus("Waiting for guest...");
 });
-
-peer.on("connection",c=>{
-conn=c;
-setupConn();
-});
+peer.on("connection",c=>{conn=c; setupConnection();});
 }
 
+/* GUEST */
 function startJoin(){
 peer=new Peer();
-myRole="guest";
-
+role="guest";
 peer.on("open",()=>{
-conn=peer.connect(document.getElementById("join-id").value);
-setupConn();
+const id=document.getElementById("join-id").value;
+if(!id) return alert("Enter a code!");
+setStatus("Connecting...");
+conn=peer.connect(id,{reliable:true});
+setupConnection();
 });
 }
 
-function setupConn(){
-
+/* CONNECTION */
+function setupConnection(){
 conn.on("open",()=>{
-updateStatus("Connected");
-
-if(myRole==="host"){
-conn.send({type:"INIT",mode,maxRounds});
-sendGameState();
-show("screen-game");
-startRound();
-}
+setStatus("Connected ✔","#22c55e");
+if(role==="guest") conn.send({type:"READY"});
 });
-
-conn.on("close",handleDisconnect);
-conn.on("error",handleDisconnect);
-
 conn.on("data",d=>{
-
-if(d.type==="INIT"){
-mode=d.mode;
-maxRounds=d.maxRounds;
-}
-
-if(d.type==="SYNC"){
-Object.assign(window,d.state);
-startRound();
-startTimer();
-}
-
-if(d.type==="TRUTH"){truth=d.order;updateUI();}
-if(d.type==="GUESS"){revealAll(truth,d.order);}
-
-if(d.type==="NEXT"){
-currentIdx=d.index;
-if(currentIdx>=maxRounds)showFinalScore();
-else startRound();
-}
-
-if(d.type==="PAUSE"){
-paused=d.paused;
-if(!paused)startTimer();
-}
-
+if(d.type==="READY" && role==="host"){conn.send({type:"START",mode,max}); enterGame();}
+if(d.type==="START"){mode=d.mode; max=d.max; enterGame();}
+if(d.type==="TRUTH"){truth=d.order; hostSubmitted=true; maybeReveal();}
+if(d.type==="GUESS"){guestSubmitted=true; maybeReveal();}
+if(d.type==="NEXT"){idx=d.i; if(idx>=max) final(); else round();}
 });
+conn.on("close",()=>{setStatus("Disconnected","#ef4444"); alert("Connection lost"); location.reload();});
+conn.on("error",()=>{setStatus("Connection error","#ef4444");});
 }
 
-function handleDisconnect(){
-updateStatus("Reconnecting...");
-if(myRole==="guest"&&reconnectAttempts<5){
-reconnectAttempts++;
-setTimeout(startJoin,1500);
-}
-}
-
-function sendGameState(){
-if(myRole!=="host")return;
-
-conn.send({
-type:"SYNC",
-state:{
-currentIdx,
-mode,
-maxRounds,
-truth,
-paused,
-timeLeft
-}
-});
+/* GAME */
+function enterGame(){show("screen-game"); round();}
+function round(){
+truth=null; locked=false;
+hostSubmitted=false; guestSubmitted=false;
+document.getElementById("results-list").innerHTML="";
+const qSet=bank[mode]; const q=qSet[idx%qSet.length];
+document.getElementById("question").innerText=q.q;
+document.getElementById("round").innerText=`Question ${idx+1} of ${max}`;
+render(q.opts); ui();
 }
 
-/* ---------- GAME FLOW ---------- */
-
-function startRound(){
-if(currentIdx>=maxRounds)return;
-
-truth=null;
-locked=false;
-timeLeft=20;
-
-const qSet=questionBank[mode];
-const q=qSet[currentIdx%qSet.length];
-
-document.getElementById("question-text").innerText=q.q;
-document.getElementById("round-counter").innerText=
-`Round ${currentIdx+1} / ${maxRounds}`;
-
-renderList(q.opts);
-updateUI();
-startTimer();
+function ui(){
+const chooser=(idx%2===0 && role==="host") || (idx%2!==0 && role==="guest");
+const r=document.getElementById("role"); const b=document.getElementById("submit");
+r.innerText=chooser ? "Setting the Truth" : (truth ? "Your Turn to Guess" : "Partner is choosing...");
+r.style.color=chooser?"var(--p2)":"var(--p1)";
+b.classList.toggle("hidden",!chooser && !truth);
+b.disabled=locked;
+b.innerText=locked?"Order Locked":"Lock Order";
 }
 
-function updateUI(){
-
-const role=document.getElementById("role-indicator");
-const btn=document.getElementById("submit-btn");
-
-const chooser=
-(currentIdx%2===0&&myRole==="host")||
-(currentIdx%2!==0&&myRole==="guest");
-
-if(chooser){
-role.innerText="Chooser";
-role.className="role-banner role-chooser";
-btn.classList.remove("hidden");
-}
-else if(!truth){
-role.innerText="Waiting...";
-role.className="role-banner role-guesser";
-btn.classList.add("hidden");
-}
-else{
-role.innerText="Guess Now";
-role.className="role-banner role-guesser";
-btn.classList.remove("hidden");
-}
-
-btn.disabled=locked;
-}
-
+/* SUBMIT ORDER */
 function sendOrder(){
-
-playSound("click-sfx");
-
-const order=[...document.querySelectorAll(".rank-item")]
-.map(li=>li.innerText);
-
-locked=true;
-updateUI();
-
-if(!truth){
-truth=order;
-conn.send({type:"TRUTH",order});
+const order=[...document.querySelectorAll(".rank-item")].map(x=>x.innerText);
+locked=true; ui();
+if(role==="host"){truth=order; hostSubmitted=true; conn.send({type:"TRUTH",order});}
+else {guestSubmitted=true; conn.send({type:"GUESS",order});}
+maybeReveal();
 }
-else{
-conn.send({type:"GUESS",order});
-revealAll(truth,order);
+
+function maybeReveal(){
+if(hostSubmitted && guestSubmitted){
+const order=[...document.querySelectorAll(".rank-item")].map(x=>x.innerText);
+showResults(truth, order);
+hostSubmitted=guestSubmitted=false;
 }
 }
 
-function revealAll(truthArr,guessArr){
-
+/* SHOW RESULTS WITH ALL 5 OPTIONS */
+function showResults(t,g){
 show("screen-results");
-playSound("score-sfx");
-
 let pts=0;
+let resultHtml="";
+t.forEach((x,i)=>{
+const pos=g.indexOf(x);
+const diff=Math.abs(i-pos);
+let cls="wrong";
+if(diff===0) {cls="correct"; pts+=2;}
+else if(diff===1) {cls="close"; pts+=1;}
+resultHtml+=`<div class="result-item ${cls}">${x}</div>`;
+});
+document.getElementById("results-list").innerHTML=resultHtml;
+const s=Math.round((pts/10)*100);
+total+=s;
+document.getElementById("score").innerText=s+"%";
+const c=document.getElementById("controls");
+if(role==="host"){c.innerHTML=`<button class="btn-main" onclick="next()">${idx+1>=max?"Final Results":"Next Round →"}</button>`;}
+else{c.innerHTML=`<button class="btn-wait">Waiting for Host...</button>`;}
+}
 
-truthArr.forEach((item,i)=>{
-const g=guessArr.indexOf(item);
-const d=Math.abs(i-g);
-if(d===0)pts+=2;
-else if(d===1)pts+=1;
+/* NEXT ROUND */
+function next(){
+if(role!=="host") return;
+idx++;
+conn.send({type:"NEXT",i:idx});
+if(idx>=max) final(); else round();
+}
+
+/* FINAL */
+function final(){show("screen-final"); document.getElementById("final").innerText=Math.round(total/max)+"%";}
+
+/* DRAG LOGIC */
+let active=null;
+const list=document.getElementById("rank-list");
+let offsetY=0;
+
+list.addEventListener("pointerdown",e=>{
+if(locked) return;
+const item=e.target.closest(".rank-item");
+if(!item) return;
+active=item;
+offsetY=e.clientY - item.getBoundingClientRect().top;
+item.classList.add("active");
+item.setPointerCapture(e.pointerId);
 });
 
-const score=Math.round((pts/10)*100);
-totalScore+=score;
-document.getElementById("score-display").innerText=score+"%";
+list.addEventListener("pointermove",e=>{
+if(!active) return;
+const y=e.clientY - offsetY;
+active.style.transform=`translateY(${y - active.offsetTop}px)`;
+const siblings=[...list.querySelectorAll(".rank-item:not(.active)")];
+siblings.forEach(sib=>{sib.style.transition="transform 0.2s";});
+const next=siblings.find(sib=>{
+const box=sib.getBoundingClientRect();
+return e.clientY < box.top + box.height/2;
+});
+list.insertBefore(active,next||null);
+});
 
-const area=document.getElementById("host-control-area");
-
-if(myRole==="host"){
-area.innerHTML=`
-<button class="btn-main" onclick="togglePause()">
-${paused?"Resume ▶":"Pause ⏸"}
-</button>
-<button class="btn-main" onclick="triggerHostNext()">
-${currentIdx+1>=maxRounds?"Finish":"Next →"}
-</button>`;
-}
-else{
-area.innerHTML=`<button class="btn-wait">Waiting for Host...</button>`;
-}
-}
-
-function triggerHostNext(){
-if(myRole!=="host")return;
-
-const next=currentIdx+1;
-currentIdx=next;
-
-conn.send({type:"NEXT",index:next});
-
-if(next>=maxRounds)showFinalScore();
-else startRound();
-}
-
-function togglePause(){
-if(myRole!=="host")return;
-
-paused=!paused;
-conn.send({type:"PAUSE",paused});
-if(!paused)startTimer();
-}
-
-function showFinalScore(){
-show("screen-final");
-document.getElementById("final-score").innerText=
-Math.round(totalScore/maxRounds)+"%";
-}
-
-/* ---------- TIMER ---------- */
-
-function startTimer(){
-clearInterval(roundTimer);
-document.getElementById("timer").innerText=timeLeft+"s";
-
-roundTimer=setInterval(()=>{
-if(paused)return;
-
-timeLeft--;
-document.getElementById("timer").innerText=timeLeft+"s";
-
-if(timeLeft<=0){
-clearInterval(roundTimer);
-if(!locked)sendOrder();
-}
-},1000);
-}
-
-/* ---------- DRAG SORT ---------- */
-
-function renderList(opts){
-const list=document.getElementById("rank-list");
+list.addEventListener("pointerup",e=>{
+if(!active) return;
+active.classList.remove("active");
+active.style.transform="";
+active.releasePointerCapture(e.pointerId);
+active=null;
+});
+/* RENDER LIST */
+function render(opts){
 list.innerHTML="";
-
-opts.sort(()=>Math.random()-.5).forEach(t=>{
-const li=document.createElement("div");
-li.className="rank-item fade-in";
-li.draggable=true;
-li.innerText=t;
-
-li.addEventListener("dragstart",()=>!locked&&li.classList.add("dragging"));
-li.addEventListener("dragend",()=>li.classList.remove("dragging"));
-
-list.appendChild(li);
+[...opts].sort(()=>Math.random()-.5).forEach(t=>{
+const d=document.createElement("div");
+d.className="rank-item"; d.innerText=t; list.appendChild(d);
 });
-}
-
-document.getElementById("rank-list").addEventListener("dragover",e=>{
-if(locked)return;
-e.preventDefault();
-
-const dragging=document.querySelector(".dragging");
-const list=document.getElementById("rank-list");
-
-const after=[...list.querySelectorAll(".rank-item:not(.dragging)")]
-.find(el=>e.clientY<=el.getBoundingClientRect().top+el.height/2);
-
-list.insertBefore(dragging,after||null);
-});
-
-/* ---------- UI HELPERS ---------- */
-
-function show(id){
-document.querySelectorAll(".container>div")
-.forEach(d=>d.classList.add("hidden"));
-
-const el=document.getElementById(id);
-el.classList.remove("hidden");
-el.classList.add("fade-in");
-}
-
-function updateStatus(text){
-document.getElementById("connection-status").innerText=text;
 }
 </script>
-
 </body>
 </html>
-
