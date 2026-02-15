@@ -10,27 +10,29 @@
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 1rem; min-height: 100vh; margin: 0; }
         .container { max-width: 480px; width: 100%; background: var(--card); padding: 1.5rem; border-radius: 28px; text-align: center; align-self: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
         
-        /* UI Elements */
+        /* Banner & Labels */
         .role-banner { background: rgba(99, 102, 241, 0.2); padding: 10px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; border: 1px solid var(--p1); }
         .role-chooser { color: var(--p2); border-color: var(--p2); background: rgba(236, 72, 153, 0.1); }
         .role-guesser { color: var(--p1); border-color: var(--p1); background: rgba(99, 102, 241, 0.1); }
 
+        /* Draggable List */
         #rank-list { list-style: none; padding: 0; margin: 1.5rem 0; }
         .rank-item { background: #334155; margin-bottom: 10px; padding: 1rem; border-radius: 14px; cursor: grab; display: flex; align-items: center; text-align: left; font-size: 0.95rem; border: 2px solid transparent; }
         .rank-item.dragging { opacity: 0.4; border-color: var(--p1); }
 
-        /* Results Display */
-        .comparison-stack { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+        /* Comparison Stack */
+        .comparison-stack { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; text-align: left; }
         .res-item { display: flex; align-items: center; background: #0f172a; padding: 12px; border-radius: 16px; border-left: 5px solid #475569; }
         .res-item.perfect { border-left-color: var(--success); background: rgba(34, 197, 94, 0.1); }
         .res-item.close { border-left-color: var(--near); background: rgba(234, 179, 8, 0.1); }
-        .res-rank { font-weight: 800; width: 30px; color: #94a3b8; }
-        .res-content { flex-grow: 1; text-align: left; padding-left: 10px; }
+        .res-rank { font-weight: 800; width: 30px; color: #94a3b8; font-size: 1.1rem; }
+        .res-content { flex-grow: 1; padding-left: 10px; }
 
-        button { width: 100%; padding: 1.1rem; border-radius: 14px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        /* Buttons & Inputs */
+        button { width: 100%; padding: 1.1rem; border-radius: 14px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; transition: 0.2s; }
         .btn-main { background: var(--p1); color: white; }
         .btn-locked { background: var(--success) !important; cursor: default; }
-        .btn-wait { background: #334155 !important; color: #94a3b8; cursor: not-allowed; }
+        .btn-wait { background: #1e293b !important; color: #64748b; border: 1px solid #334155 !important; cursor: not-allowed; }
         
         select, input { width: 100%; padding: 12px; border-radius: 12px; background: #0f172a; color: white; border: 1px solid #475569; margin-bottom: 15px; box-sizing: border-box; }
         .hidden { display: none; }
@@ -41,12 +43,10 @@
 <div class="container">
     <div id="screen-start">
         <h1>DuoRanker</h1>
-        <label>Category:</label>
         <select id="mode-select">
             <option value="romance">30 Romance Q&A</option>
             <option value="personal">30 Personal Q&A</option>
         </select>
-        <label>Game Length:</label>
         <select id="length-select">
             <option value="10">10 Questions</option>
             <option value="20">20 Questions</option>
@@ -54,51 +54,104 @@
         </select>
         <button class="btn-main" onclick="startHost()">Host Game</button>
         <div style="margin:15px; color:#475569;">— OR —</div>
-        <input type="text" id="join-id" placeholder="Partner's Code">
-        <button style="background:#334155; color:white;" onclick="startJoin()">Join Game</button>
+        <input type="text" id="join-id" placeholder="Enter Partner's Code">
+        <button style="background:#334155; color:white;" onclick="startJoin()">Join Partner</button>
     </div>
 
     <div id="screen-waiting" class="hidden">
-        <h3>Invite Code</h3>
+        <h3>Room Code</h3>
         <h1 id="my-id-display" style="font-size: 3.5rem; color: var(--p1); margin: 0;">----</h1>
+        <p>Waiting for connection...</p>
     </div>
 
     <div id="screen-game" class="hidden">
-        <div id="role-indicator" class="role-banner">Your Role...</div>
+        <div id="role-indicator" class="role-banner">Your Role</div>
         <h2 id="question-text">...</h2>
         <div id="rank-list"></div>
         <button id="submit-btn" class="btn-main" onclick="sendOrder()">Lock Order</button>
-        <p id="round-counter" style="font-size: 0.75rem; color: #64748b; margin-top: 10px;"></p>
+        <p id="round-counter" style="font-size: 0.8rem; color: #64748b; margin-top: 10px;"></p>
     </div>
 
     <div id="screen-results" class="hidden">
         <div id="score-display" style="font-size: 4rem; font-weight: 900; color: var(--p2);">0%</div>
         <div class="comparison-stack" id="full-reveal"></div>
         
-        <div id="next-action-area">
-            <button id="next-btn" class="btn-main" onclick="hostNext()">Host: Next Question →</button>
-        </div>
+        <div id="host-controls" style="margin-top: 20px;"></div>
     </div>
 
     <div id="screen-final" class="hidden">
-        <h1>Game Over</h1>
+        <h1>Final Connection</h1>
         <div id="final-score" style="font-size: 5rem; font-weight: 900; color: var(--success);">0%</div>
-        <button class="btn-main" onclick="location.reload()">Return to Menu</button>
+        <button class="btn-main" onclick="location.reload()">Back to Home</button>
     </div>
 </div>
 
 <script>
-    // Include the 30 Romance and 30 Personal questions here as provided in previous turns
+    // 30 Romance & 30 Personal Questions
     const questionBank = {
         romance: [
-            { q: "Ideal First Date?", opts: ["Fancy Rooftop Dinner", "Cozy Coffee Shop", "Amusement Park", "Starlit Picnic", "Arcade/Bowling"] },
-            { q: "Romantic Gesture?", opts: ["Long Love Letter", "Surprise Trip", "Cooking Dinner", "PDA", "Small Gifts"] },
-            // ... (Add all 30 here)
+            { q: "Ideal First Date?", opts: ["Fancy Dinner", "Coffee Shop", "Amusement Park", "Starlit Picnic", "Arcade"] },
+            { q: "Best Gesture?", opts: ["Love Letter", "Surprise Trip", "Cooking", "PDA", "Small Gifts"] },
+            { q: "Physical Touch?", opts: ["Holding Hands", "Hugs", "Forehead Kisses", "Cuddling", "Massages"] },
+            { q: "Honeymoon?", opts: ["Maldives", "Paris", "Swiss Alps", "Tokyo", "Mediterranean"] },
+            { q: "Couple Activity?", opts: ["Movies", "Cooking", "Gym", "Traveling", "Gaming"] },
+            { q: "Attractive Trait?", opts: ["Humor", "Ambition", "Compassion", "Intelligence", "Style"] },
+            { q: "Morning Vibe?", opts: ["Cuddling", "Breakfast", "Morning Walk", "Quiet Coffee", "Gym"] },
+            { q: "Love Language?", opts: ["Words", "Service", "Gifts", "Time", "Touch"] },
+            { q: "Movie Genre?", opts: ["Rom-Com", "Drama", "Action", "Horror", "Sci-Fi"] },
+            { q: "Anniversary?", opts: ["Night In", "Party", "Adventure", "Gift Exchange", "Dining"] },
+            { q: "Chill Vibe?", opts: ["Wine & Music", "Netflix", "Deep Talk", "Read Together", "Stargazing"] },
+            { q: "Core Value?", opts: ["Trust", "Passion", "Communication", "Consistency", "Shared Interests"] },
+            { q: "Crush Type?", opts: ["Rebellious", "Academic", "Athlete", "Artist", "Funny"] },
+            { q: "Future Home?", opts: ["Cottage", "Penthouse", "World Traveler", "Big Family", "Art Studio"] },
+            { q: "Gift Type?", opts: ["Jewelry", "Tech", "Experiences", "Handmade", "Books/Flowers"] },
+            { q: "Rainy Day?", opts: ["Napping", "Board Games", "Baking", "Records", "Series Binge"] },
+            { q: "Living Together?", opts: ["Sleeping Together", "Shared Meals", "Inside Jokes", "Support", "Home Decor"] },
+            { q: "Conflict?", opts: ["Talk Now", "Cool Down", "Message", "Hug it Out", "Logical Debate"] },
+            { q: "Music?", opts: ["Acoustic", "Pop", "R&B", "Rock", "Indie"] },
+            { q: "Proposal?", opts: ["Private", "Public", "Surprise Party", "On a Trip", "Meaningful Spot"] },
+            { q: "Goal?", opts: ["Best Friends", "Power Couple", "Adventurers", "Calm/Stable", "Inspirers"] },
+            { q: "Scent?", opts: ["Citrus", "Vanilla", "Woody", "Floral", "Ocean"] },
+            { q: "Dinner?", opts: ["Sushi", "Steak", "Pasta", "Street Food", "Tacos"] },
+            { q: "Dance?", opts: ["Slow Dance", "Silly", "Ballroom", "Clubs", "No Dance"] },
+            { q: "Photos?", opts: ["Candids", "Portraits", "Landscape", "Selfies", "Memories Only"] },
+            { q: "Travel?", opts: ["Resort", "Backpacking", "City Hopping", "Road Trip", "Cruising"] },
+            { q: "Bedroom?", opts: ["Minimalist", "Boho", "Dark", "Colorful", "Cozy"] },
+            { q: "Pet?", opts: ["Dog", "Cat", "Exotic", "Birds", "No Pets"] },
+            { q: "Compliment?", opts: ["Appearance", "Personality", "Achievement", "Effort", "Vibe"] },
+            { q: "Sweet?", opts: ["Dark Choc", "Ice Cream", "Pastry", "Gummies", "Cake"] }
         ],
         personal: [
-            { q: "Best Life Phase?", opts: ["Childhood", "High School", "Young Adult", "Career", "Retirement"] },
-            { q: "Biggest Fear?", opts: ["Alone", "Failure", "Public Speaking", "Pain", "Losing Control"] },
-            // ... (Add all 30 here)
+            { q: "Life Phase?", opts: ["Childhood", "High School", "Young Adult", "Career", "Retirement"] },
+            { q: "Fear?", opts: ["Alone", "Failure", "Public Speaking", "Pain", "Control"] },
+            { q: "Strength?", opts: ["Resilience", "Empathy", "Logic", "Creativity", "Discipline"] },
+            { q: "Habit?", opts: ["Early Rising", "Night Owl", "Journaling", "Meditation", "Exercise"] },
+            { q: "Stress Relief?", opts: ["Music", "Sleep", "Talk", "Cleaning", "Exercise"] },
+            { q: "Dream Job?", opts: ["Artist", "CEO", "Teacher", "Scientist", "Nomad"] },
+            { q: "Battery?", opts: ["Introvert", "Extrovert", "Ambivert", "Selective", "Homebody"] },
+            { q: "Routine?", opts: ["Gym", "Phone/Coffee", "Meditate", "Late Sleep", "To-Do List"] },
+            { q: "Workplace?", opts: ["Office", "Home", "Nature", "Studio", "Cafe"] },
+            { q: "Essential?", opts: ["Camera", "Playlist", "Shoes", "Kindle", "Map"] },
+            { q: "Skill?", opts: ["Cooking", "Logic", "Listening", "Organizing", "Stories"] },
+            { q: "Philosophy?", opts: ["Work Hard", "Peace", "Present Moment", "Growth", "Altruism"] },
+            { q: "Weekend?", opts: ["Productive", "Recovery", "Social", "Hiking", "Hobbies"] },
+            { q: "Drink?", opts: ["Iced Coffee", "Matcha", "Smoothie", "Water", "Beer/Wine"] },
+            { q: "Style?", opts: ["Streetwear", "Minimalist", "Vintage", "Athleisure", "Casual"] },
+            { q: "Memory?", opts: ["Visual", "Audio", "Emotional", "Context", "Smell"] },
+            { q: "Peeve?", opts: ["Lateness", "Chewing", "Ignorance", "Mess", "Lying"] },
+            { q: "Spending?", opts: ["Saver", "Impulse", "Quality", "Experiences", "Giver"] },
+            { q: "Comfort?", opts: ["Pizza", "Soup", "Chocolate", "Burger", "Home Meal"] },
+            { q: "Talent?", opts: ["Accents", "Trivia", "Math", "Intuition", "Fixing"] },
+            { q: "Daily?", opts: ["Smile", "Tasks", "Learn", "Health", "Peace"] },
+            { q: "Home?", opts: ["Skyscraper", "Suburbs", "Farm", "Island", "Van"] },
+            { q: "Season?", opts: ["Fall", "Spring", "Summer", "Winter", "Rain"] },
+            { q: "Brain?", opts: ["Analytical", "Creative", "Verbal", "Spacial", "Emotional"] },
+            { q: "Phone?", opts: ["Scroll", "Texting", "Voice Notes", "Photos", "Unplugged"] },
+            { q: "Childhood?", opts: ["Astronaut", "Athlete", "Singer", "Vet", "Teacher"] },
+            { q: "Reading?", opts: ["Fiction", "Self-Help", "Articles", "Biography", "Graphic"] },
+            { q: "Resolution?", opts: ["Face to Face", "Space", "Debate", "Compromise", "Avoidance"] },
+            { q: "Party?", opts: ["Center", "Corner Talk", "DJ", "Snack Table", "Leaves Early"] },
+            { q: "Need?", opts: ["Time", "Energy", "Money", "Peace", "Adventure"] }
         ]
     };
 
@@ -149,18 +202,19 @@
     function updateUI() {
         const roleEl = document.getElementById('role-indicator');
         const btn = document.getElementById('submit-btn');
+        // Role swaps every round
         const isChooser = (currentIdx % 2 === 0 && myRole === 'host') || (currentIdx % 2 !== 0 && myRole === 'guest');
 
         if(isChooser) {
-            roleEl.innerText = "YOUR ROLE: CHOOSER (Setting Truth)";
+            roleEl.innerText = "YOUR ROLE: CHOOSER (Setting the Truth)";
             roleEl.className = "role-banner role-chooser";
             btn.classList.remove('hidden');
         } else if (!truth) {
-            roleEl.innerText = "YOUR ROLE: GUESSER (Wait for Friend)";
+            roleEl.innerText = "YOUR ROLE: GUESSER (Wait for Partner)";
             roleEl.className = "role-banner role-guesser";
             btn.classList.add('hidden');
         } else {
-            roleEl.innerText = "YOUR ROLE: GUESSER (Take a Guess!)";
+            roleEl.innerText = "YOUR ROLE: GUESSER (Guess the Truth!)";
             roleEl.className = "role-banner role-guesser";
             btn.classList.remove('hidden');
         }
@@ -188,26 +242,27 @@
             if(dist === 0) pts += 2; else if(dist === 1) pts += 1;
             const div = document.createElement('div');
             div.className = `res-item ${dist === 0 ? 'perfect' : (dist === 1 ? 'close' : '')}`;
-            div.innerHTML = `<div class="res-rank">#${i + 1}</div><div class="res-content"><b>${item}</b><br><small>Guess: #${gIdx+1}</small></div>`;
+            div.innerHTML = `<div class="res-rank">#${i + 1}</div><div class="res-content"><b>${item}</b><br><small>Partner guessed #${gIdx+1}</small></div>`;
             stack.appendChild(div);
         });
         
-        totalScore += Math.round((pts/10)*100);
-        document.getElementById('score-display').innerText = Math.round((pts/10)*100) + "%";
+        const roundScore = Math.round((pts/10)*100);
+        totalScore += roundScore;
+        document.getElementById('score-display').innerText = roundScore + "%";
         
-        // Host gets the active button, Guest gets a waiting message
-        const nextArea = document.getElementById('next-action-area');
+        // Host gets the control button, Guest gets the wait label
+        const hostControls = document.getElementById('host-controls');
         if (myRole === 'host') {
-            nextArea.innerHTML = `<button class="btn-main" onclick="hostNext()">${currentIdx + 1 >= maxRounds ? 'Finish Game' : 'Next Question →'}</button>`;
+            hostControls.innerHTML = `<button class="btn-main" onclick="hostProceed()">${currentIdx + 1 >= maxRounds ? 'See Final Summary' : 'Next Question →'}</button>`;
         } else {
-            nextArea.innerHTML = `<button class="btn-wait" disabled>Waiting for Host...</button>`;
+            hostControls.innerHTML = `<button class="btn-wait" disabled>Waiting for Host...</button>`;
         }
     }
 
-    function hostNext() {
+    function hostProceed() {
         if (currentIdx + 1 >= maxRounds) {
             showFinalScore();
-            conn.send({type: 'NEXT'}); // Trigger guest to final screen
+            conn.send({type: 'NEXT'}); // Moves guest to final screen
         } else {
             currentIdx++;
             conn.send({type: 'NEXT'});
