@@ -18,9 +18,25 @@
         .btn-skip { background:var(--skip); margin-top: 12px; font-size: 0.8rem; padding: 0.6rem; opacity: 0.8; }
         input, select { width:100%; padding:12px; margin-bottom:10px; border-radius:10px; background:#111827; color:white; border:1px solid #334155; box-sizing:border-box; font-size:1rem; }
         #rank-list { position:relative; margin:1.2rem 0; display:flex; flex-direction:column; gap:8px; }
-        .rank-item { background:#334155; padding:14px; border-radius:12px; cursor:grab; text-align:left; user-select:none; display:flex; align-items:center; border:1px solid rgba(255,255,255,0.05); font-size:0.9rem; }
+        
+        /* MOBILE DRAG FIX: touch-action: none prevents the page from scrolling while dragging */
+        .rank-item { 
+            background:#334155; 
+            padding:14px; 
+            border-radius:12px; 
+            cursor:grab; 
+            text-align:left; 
+            user-select:none; 
+            display:flex; 
+            align-items:center; 
+            border:1px solid rgba(255,255,255,0.05); 
+            font-size:0.9rem;
+            touch-action: none; 
+            position: relative;
+        }
+        
         .rank-item::before { content:"☰"; margin-right:12px; opacity:0.3; }
-        .rank-item.active { background:var(--p1); transform: scale(1.02); z-index: 10; }
+        .rank-item.active { background:var(--p1); transform: scale(1.02); z-index: 10; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
         .rank-preview { opacity: 0.4; cursor: default; pointer-events: none; border: 1px dashed #475569; }
         #live-points { background: rgba(0,0,0,0.4); padding: 10px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-around; font-weight: bold; border: 1px solid #475569; font-size: 0.8rem; }
         .result-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
@@ -39,14 +55,14 @@
     </div>
 
     <div id="screen-start">
-        <h1>Rank 5 but better</h1>
+        <h1>DuoRanker</h1>
         <select id="mode-select">
-            <option value="gaming">Video Games</option>
-            <option value="travel">Travel & Adventure</option>
-            <option value="career">Career & Ambition</option>
-            <option value="romance">Romance</option>
-            <option value="personal">Personal</option>
-            <option value="chaos">CHAOS MODE</option>
+            <option value="gaming">Video Games 🎮</option>
+            <option value="travel">Travel & Adventure ✈️</option>
+            <option value="career">Career & Ambition 💼</option>
+            <option value="romance">Romance 💖</option>
+            <option value="personal">Personal Traits 🧠</option>
+            <option value="chaos">🔥 CHAOS MODE</option>
         </select>
         <select id="round-select">
             <option value="5">Blitz (5 Rounds)</option>
@@ -133,7 +149,11 @@ function startHost() {
 
 function startJoin() {
     peer = new Peer(); role = "guest";
-    peer.on("open", () => { conn = peer.connect(document.getElementById("join-id").value); setup(); });
+    peer.on("open", () => { 
+        const id = document.getElementById("join-id").value;
+        if(!id) return alert("Enter a code!");
+        conn = peer.connect(id); setup(); 
+    });
 }
 
 function setup() {
@@ -303,22 +323,43 @@ function showFinalScore() {
     show("screen-final");
 }
 
+// DRAG AND DROP LOGIC
 let active = null;
 document.addEventListener("pointerdown", e => { 
-    if(e.target.classList.contains("rank-item") && !e.target.classList.contains("rank-preview") && !locked) { 
-        active = e.target; active.classList.add("active"); 
+    // Check if we clicked/touched a rank item that isn't locked or a preview
+    const item = e.target.closest(".rank-item");
+    if(item && !item.classList.contains("rank-preview") && !locked) { 
+        active = item; 
+        active.classList.add("active"); 
+        // For mobile: setPointerCapture allows tracking movement even if the finger leaves the element
+        active.setPointerCapture(e.pointerId);
     } 
 });
+
 document.addEventListener("pointermove", e => {
     if(!active) return;
+    
+    // Find what is currently under the finger/mouse
     let target = document.elementFromPoint(e.clientX, e.clientY);
-    if(target && target.classList.contains("rank-item") && target !== active) {
-        let rect = target.getBoundingClientRect();
-        if(e.clientY > rect.top + rect.height/2) target.after(active);
-        else target.before(active);
+    if(target) {
+        let itemUnder = target.closest(".rank-item");
+        // Swap positions if moving over another list item
+        if(itemUnder && itemUnder !== active && !itemUnder.classList.contains("rank-preview")) {
+            let rect = itemUnder.getBoundingClientRect();
+            let next = (e.clientY > rect.top + rect.height / 2);
+            if(next) itemUnder.after(active);
+            else itemUnder.before(active);
+        }
     }
 });
-document.addEventListener("pointerup", () => { if(active) active.classList.remove("active"); active = null; });
+
+document.addEventListener("pointerup", e => { 
+    if(active) {
+        active.releasePointerCapture(e.pointerId);
+        active.classList.remove("active"); 
+        active = null; 
+    }
+});
 
 initGame();
 </script>
