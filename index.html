@@ -1,482 +1,247 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DuoRanker - Host Sync</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root { --p1: #6366f1; --p2: #ec4899; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --success: #22c55e; --near: #eab308; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 1rem; min-height: 100vh; margin: 0; }
+        .container { max-width: 480px; width: 100%; background: var(--card); padding: 1.5rem; border-radius: 28px; text-align: center; align-self: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        
+        /* UI Elements */
+        .role-banner { background: rgba(99, 102, 241, 0.2); padding: 10px; border-radius: 12px; font-size: 0.85rem; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; border: 1px solid var(--p1); }
+        .role-chooser { color: var(--p2); border-color: var(--p2); background: rgba(236, 72, 153, 0.1); }
+        .role-guesser { color: var(--p1); border-color: var(--p1); background: rgba(99, 102, 241, 0.1); }
 
-<title>DuoRanker Multiplayer</title>
+        #rank-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+        .rank-item { background: #334155; margin-bottom: 10px; padding: 1rem; border-radius: 14px; cursor: grab; display: flex; align-items: center; text-align: left; font-size: 0.95rem; border: 2px solid transparent; }
+        .rank-item.dragging { opacity: 0.4; border-color: var(--p1); }
 
-<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+        /* Results Display */
+        .comparison-stack { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .res-item { display: flex; align-items: center; background: #0f172a; padding: 12px; border-radius: 16px; border-left: 5px solid #475569; }
+        .res-item.perfect { border-left-color: var(--success); background: rgba(34, 197, 94, 0.1); }
+        .res-item.close { border-left-color: var(--near); background: rgba(234, 179, 8, 0.1); }
+        .res-rank { font-weight: 800; width: 30px; color: #94a3b8; }
+        .res-content { flex-grow: 1; text-align: left; padding-left: 10px; }
 
-<style>
-:root{
---p1:#6366f1;
---p2:#ec4899;
---bg:#0f172a;
---card:#1e293b;
---text:#f8fafc;
---near:#eab308;
-}
-
-body{
-margin:0;
-font-family:system-ui;
-background:var(--bg);
-color:var(--text);
-display:flex;
-justify-content:center;
-align-items:center;
-min-height:100vh;
-padding:1rem;
-}
-
-.container{
-max-width:480px;
-width:100%;
-background:var(--card);
-padding:1.5rem;
-border-radius:24px;
-text-align:center;
-}
-
-.hidden{display:none;}
-
-button{
-width:100%;
-padding:1rem;
-border:none;
-border-radius:12px;
-font-weight:bold;
-cursor:pointer;
-margin-top:8px;
-}
-
-.btn-main{background:var(--p1);color:white;}
-.btn-wait{background:#111827;color:#555;border:1px solid #333;cursor:not-allowed;}
-
-input,select{
-width:100%;
-padding:10px;
-margin-bottom:10px;
-border-radius:10px;
-background:#111827;
-color:white;
-border:1px solid #333;
-}
-
-.rank-item{
-background:#334155;
-padding:12px;
-margin-bottom:8px;
-border-radius:12px;
-cursor:grab;
-touch-action:none;
-transition:transform .15s ease, box-shadow .15s ease;
-}
-
-.rank-item.active{
-transform:scale(1.05);
-box-shadow:0 8px 20px rgba(0,0,0,.4);
-cursor:grabbing;
-}
-
-.fade-in{
-animation:fade .25s ease;
-}
-
-@keyframes fade{
-from{opacity:0;transform:translateY(5px);}
-to{opacity:1;transform:translateY(0);}
-}
-</style>
+        button { width: 100%; padding: 1.1rem; border-radius: 14px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        .btn-main { background: var(--p1); color: white; }
+        .btn-locked { background: var(--success) !important; cursor: default; }
+        .btn-wait { background: #334155 !important; color: #94a3b8; cursor: not-allowed; }
+        
+        select, input { width: 100%; padding: 12px; border-radius: 12px; background: #0f172a; color: white; border: 1px solid #475569; margin-bottom: 15px; box-sizing: border-box; }
+        .hidden { display: none; }
+    </style>
 </head>
-
 <body>
 
 <div class="container">
+    <div id="screen-start">
+        <h1>DuoRanker</h1>
+        <label>Category:</label>
+        <select id="mode-select">
+            <option value="romance">30 Romance Q&A</option>
+            <option value="personal">30 Personal Q&A</option>
+        </select>
+        <label>Game Length:</label>
+        <select id="length-select">
+            <option value="10">10 Questions</option>
+            <option value="20">20 Questions</option>
+            <option value="30">30 Questions</option>
+        </select>
+        <button class="btn-main" onclick="startHost()">Host Game</button>
+        <div style="margin:15px; color:#475569;">— OR —</div>
+        <input type="text" id="join-id" placeholder="Partner's Code">
+        <button style="background:#334155; color:white;" onclick="startJoin()">Join Game</button>
+    </div>
 
-<div id="status" style="font-size:.8rem;color:var(--near)">Disconnected</div>
+    <div id="screen-waiting" class="hidden">
+        <h3>Invite Code</h3>
+        <h1 id="my-id-display" style="font-size: 3.5rem; color: var(--p1); margin: 0;">----</h1>
+    </div>
 
-<!-- START -->
-<div id="screen-start">
-<h1>DuoRanker</h1>
+    <div id="screen-game" class="hidden">
+        <div id="role-indicator" class="role-banner">Your Role...</div>
+        <h2 id="question-text">...</h2>
+        <div id="rank-list"></div>
+        <button id="submit-btn" class="btn-main" onclick="sendOrder()">Lock Order</button>
+        <p id="round-counter" style="font-size: 0.75rem; color: #64748b; margin-top: 10px;"></p>
+    </div>
 
-<select id="mode-select">
-<option value="romance">Romance</option>
-<option value="personal">Personal</option>
-</select>
+    <div id="screen-results" class="hidden">
+        <div id="score-display" style="font-size: 4rem; font-weight: 900; color: var(--p2);">0%</div>
+        <div class="comparison-stack" id="full-reveal"></div>
+        
+        <div id="next-action-area">
+            <button id="next-btn" class="btn-main" onclick="hostNext()">Host: Next Question →</button>
+        </div>
+    </div>
 
-<select id="length-select">
-<option value="10">10 Questions</option>
-<option value="20">20 Questions</option>
-<option value="30">30 Questions</option>
-</select>
-
-<button class="btn-main" onclick="startHost()">Host</button>
-
-<div style="margin:10px">— OR —</div>
-
-<input id="join-id" placeholder="Room Code">
-<button onclick="startJoin()">Join</button>
+    <div id="screen-final" class="hidden">
+        <h1>Game Over</h1>
+        <div id="final-score" style="font-size: 5rem; font-weight: 900; color: var(--success);">0%</div>
+        <button class="btn-main" onclick="location.reload()">Return to Menu</button>
+    </div>
 </div>
-
-<!-- WAIT -->
-<div id="screen-wait" class="hidden">
-<h2>Room Code</h2>
-<h1 id="room-id">----</h1>
-</div>
-
-<!-- GAME -->
-<div id="screen-game" class="hidden">
-<h3 id="role"></h3>
-<div id="timer">20s</div>
-<h2 id="question"></h2>
-<div id="rank-list"></div>
-<button id="submit" class="btn-main" onclick="sendOrder()">Lock Order</button>
-<p id="round"></p>
-</div>
-
-<!-- RESULTS -->
-<div id="screen-results" class="hidden">
-<h1 id="score">0%</h1>
-<div id="controls"></div>
-</div>
-
-<!-- FINAL -->
-<div id="screen-final" class="hidden">
-<h1>Game Over</h1>
-<h1 id="final">0%</h1>
-<button onclick="location.reload()">Home</button>
-</div>
-
-</div>
-
-<audio id="click" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
 <script>
-/* ---------- DATA ---------- */
-
-const bank={
-romance:[
-{q:"Ideal First Date?",opts:["Dinner","Coffee","Arcade","Picnic","Movie"]},
-{q:"Best Gesture?",opts:["Letter","Trip","Cooking","Gift","Hug"]}
-],
-personal:[
-{q:"Life Phase?",opts:["Childhood","Teen","Adult","Career","Retirement"]},
-{q:"Biggest Fear?",opts:["Failure","Alone","Pain","Crowd","Loss"]}
-]
-};
-
-/* ---------- STATE ---------- */
-
-let peer,conn,role;
-let idx=0,mode="romance",max=10;
-let truth=null,locked=false,total=0;
-let timer=null,time=20,paused=false;
-
-/* ---------- UI ---------- */
-
-function show(id){
-document.querySelectorAll(".container>div")
-.forEach(d=>d.classList.add("hidden"));
-document.getElementById(id).classList.remove("hidden");
-}
-
-function status(t){
-document.getElementById("status").innerText=t;
-}
-
-/* ---------- HOST ---------- */
-
-function startHost(){
-mode=document.getElementById("mode-select").value;
-max=parseInt(document.getElementById("length-select").value);
-
-peer=new Peer(Math.floor(1000+Math.random()*9000)+"");
-role="host";
-
-peer.on("open",id=>{
-document.getElementById("room-id").innerText=id;
-show("screen-wait");
-});
-
-peer.on("connection",c=>{
-conn=c;
-setup();
-});
-}
-
-/* ---------- GUEST ---------- */
-
-function startJoin(){
-peer=new Peer();
-role="guest";
-
-peer.on("open",()=>{
-conn=peer.connect(document.getElementById("join-id").value);
-setup();
-});
-}
-
-/* ---------- CONNECTION ---------- */
-
-function setup(){
-
-conn.on("open",()=>{
-status("Connected");
-
-if(role==="host"){
-conn.send({type:"INIT",mode,max});
-sync();
-show("screen-game");
-round();
-}
-});
-
-conn.on("data",d=>{
-
-if(d.type==="INIT"){
-mode=d.mode;
-max=d.max;
-show("screen-game"); // ⭐ guest enters game
-}
-
-if(d.type==="SYNC"){
-idx=d.s.idx;
-truth=d.s.truth;
-paused=d.s.paused;
-time=d.s.time;
-show("screen-game"); // ⭐ guest sync fix
-round();
-startTimer();
-}
-
-if(d.type==="TRUTH"){truth=d.order;ui();}
-if(d.type==="GUESS"){reveal(truth,d.order);}
-
-if(d.type==="NEXT"){
-idx=d.i;
-if(idx>=max)final();
-else round();
-}
-
-if(d.type==="PAUSE"){
-paused=d.p;
-if(!paused)startTimer();
-}
-
-});
-
-conn.on("close",()=>status("Disconnected"));
-}
-
-/* ---------- SYNC ---------- */
-
-function sync(){
-if(role!=="host")return;
-conn.send({
-type:"SYNC",
-s:{idx,truth,paused,time}
-});
-}
-
-/* ---------- ROUND ---------- */
-
-function round(){
-truth=null;
-locked=false;
-time=20;
-
-const q=bank[mode][idx%bank[mode].length];
-
-document.getElementById("question").innerText=q.q;
-document.getElementById("round").innerText=
-`Round ${idx+1}/${max}`;
-
-render(q.opts);
-ui();
-startTimer();
-}
-
-function ui(){
-
-const chooser=
-(idx%2===0&&role==="host")||
-(idx%2!==0&&role==="guest");
-
-const r=document.getElementById("role");
-const b=document.getElementById("submit");
-
-if(chooser){
-r.innerText="Chooser";
-b.classList.remove("hidden");
-}
-else if(!truth){
-r.innerText="Waiting...";
-b.classList.add("hidden");
-}
-else{
-r.innerText="Guess";
-b.classList.remove("hidden");
-}
-
-b.disabled=locked;
-}
-
-/* ---------- ORDER ---------- */
-
-function sendOrder(){
-
-document.getElementById("click").play();
-
-const order=[...document.querySelectorAll(".rank-item")]
-.map(x=>x.innerText);
-
-locked=true;
-ui();
-
-if(!truth){
-truth=order;
-conn.send({type:"TRUTH",order});
-}
-else{
-conn.send({type:"GUESS",order});
-reveal(truth,order);
-}
-}
-
-/* ---------- RESULTS ---------- */
-
-function reveal(t,g){
-
-show("screen-results");
-
-let pts=0;
-
-t.forEach((x,i)=>{
-const d=Math.abs(i-g.indexOf(x));
-if(d===0)pts+=2;
-else if(d===1)pts+=1;
-});
-
-const s=Math.round((pts/10)*100);
-total+=s;
-document.getElementById("score").innerText=s+"%";
-
-const c=document.getElementById("controls");
-
-if(role==="host"){
-c.innerHTML=`
-<button onclick="pause()">${paused?"Resume":"Pause"}</button>
-<button onclick="next()">
-${idx+1>=max?"Finish":"Next"}
-</button>`;
-}
-else{
-c.innerHTML=`<button class="btn-wait">Waiting...</button>`;
-}
-}
-
-/* ---------- NEXT ---------- */
-
-function next(){
-if(role!=="host")return;
-
-idx++;
-conn.send({type:"NEXT",i:idx});
-
-if(idx>=max)final();
-else round();
-}
-
-/* ---------- PAUSE ---------- */
-
-function pause(){
-if(role!=="host")return;
-paused=!paused;
-conn.send({type:"PAUSE",p:paused});
-if(!paused)startTimer();
-}
-
-/* ---------- FINAL ---------- */
-
-function final(){
-show("screen-final");
-document.getElementById("final").innerText=
-Math.round(total/max)+"%";
-}
-
-/* ---------- TIMER ---------- */
-
-function startTimer(){
-clearInterval(timer);
-
-timer=setInterval(()=>{
-if(paused)return;
-
-time--;
-document.getElementById("timer").innerText=time+"s";
-
-if(time<=0){
-clearInterval(timer);
-if(!locked)sendOrder();
-}
-},1000);
-}
-
-/* ---------- SWIPE SORT ---------- */
-
-let active=null,startY=0;
-const list=document.getElementById("rank-list");
-
-list.addEventListener("pointerdown",e=>{
-if(locked)return;
-const item=e.target.closest(".rank-item");
-if(!item)return;
-
-active=item;
-startY=e.clientY;
-item.classList.add("active");
-item.setPointerCapture(e.pointerId);
-});
-
-list.addEventListener("pointermove",e=>{
-if(!active||locked)return;
-
-const dy=e.clientY-startY;
-active.style.transform=`translateY(${dy}px) scale(1.05)`;
-
-const others=[...list.children].filter(x=>x!==active);
-
-for(let o of others){
-const box=o.getBoundingClientRect();
-if(e.clientY<box.top+box.height/2){
-list.insertBefore(active,o);
-break;
-}
-}
-});
-
-list.addEventListener("pointerup",e=>{
-if(!active)return;
-active.classList.remove("active");
-active.style.transform="";
-active.releasePointerCapture(e.pointerId);
-active=null;
-});
-
-/* ---------- RENDER ---------- */
-
-function render(opts){
-list.innerHTML="";
-opts.sort(()=>Math.random()-.5).forEach(t=>{
-const d=document.createElement("div");
-d.className="rank-item fade-in";
-d.innerText=t;
-list.appendChild(d);
-});
-}
+    // Include the 30 Romance and 30 Personal questions here as provided in previous turns
+    const questionBank = {
+        romance: [
+            { q: "Ideal First Date?", opts: ["Fancy Rooftop Dinner", "Cozy Coffee Shop", "Amusement Park", "Starlit Picnic", "Arcade/Bowling"] },
+            { q: "Romantic Gesture?", opts: ["Long Love Letter", "Surprise Trip", "Cooking Dinner", "PDA", "Small Gifts"] },
+            // ... (Add all 30 here)
+        ],
+        personal: [
+            { q: "Best Life Phase?", opts: ["Childhood", "High School", "Young Adult", "Career", "Retirement"] },
+            { q: "Biggest Fear?", opts: ["Alone", "Failure", "Public Speaking", "Pain", "Losing Control"] },
+            // ... (Add all 30 here)
+        ]
+    };
+
+    let peer, conn, myRole, currentIdx = 0, mode = 'romance', maxRounds = 10;
+    let truth = null, locked = false, totalScore = 0;
+
+    function startHost() {
+        mode = document.getElementById('mode-select').value;
+        maxRounds = parseInt(document.getElementById('length-select').value);
+        peer = new Peer(Math.floor(1000 + Math.random() * 9000).toString());
+        myRole = 'host';
+        peer.on('open', (id) => { document.getElementById('my-id-display').innerText = id; show('screen-waiting'); });
+        peer.on('connection', (c) => { conn = c; setupConn(); });
+    }
+
+    function startJoin() {
+        const tid = document.getElementById('join-id').value;
+        peer = new Peer(); myRole = 'guest';
+        peer.on('open', () => { conn = peer.connect(tid); setupConn(); });
+    }
+
+    function setupConn() {
+        conn.on('open', () => { 
+            if(myRole==='host') conn.send({type:'INIT', mode, maxRounds});
+            show('screen-game'); startRound(); 
+        });
+        conn.on('data', (d) => {
+            if(d.type==='INIT') { mode = d.mode; maxRounds = d.maxRounds; startRound(); }
+            if(d.type==='TRUTH') { truth = d.order; updateUI(); }
+            if(d.type==='GUESS') { revealAll(truth, d.order); }
+            if(d.type==='NEXT') { currentIdx++; startRound(); }
+        });
+    }
+
+    function startRound() {
+        if (currentIdx >= maxRounds) { showFinalScore(); return; }
+        show('screen-game'); truth = null; locked = false;
+        
+        const qSet = questionBank[mode];
+        const q = qSet[currentIdx % qSet.length];
+        document.getElementById('question-text').innerText = q.q;
+        document.getElementById('round-counter').innerText = `Round ${currentIdx + 1} of ${maxRounds}`;
+        
+        renderList(q.opts);
+        updateUI();
+    }
+
+    function updateUI() {
+        const roleEl = document.getElementById('role-indicator');
+        const btn = document.getElementById('submit-btn');
+        const isChooser = (currentIdx % 2 === 0 && myRole === 'host') || (currentIdx % 2 !== 0 && myRole === 'guest');
+
+        if(isChooser) {
+            roleEl.innerText = "YOUR ROLE: CHOOSER (Setting Truth)";
+            roleEl.className = "role-banner role-chooser";
+            btn.classList.remove('hidden');
+        } else if (!truth) {
+            roleEl.innerText = "YOUR ROLE: GUESSER (Wait for Friend)";
+            roleEl.className = "role-banner role-guesser";
+            btn.classList.add('hidden');
+        } else {
+            roleEl.innerText = "YOUR ROLE: GUESSER (Take a Guess!)";
+            roleEl.className = "role-banner role-guesser";
+            btn.classList.remove('hidden');
+        }
+
+        if (locked) { btn.innerText = "✓ ORDER LOCKED"; btn.className = "btn-main btn-locked"; }
+        else { btn.innerText = "LOCK MY ORDER"; btn.className = "btn-main"; }
+    }
+
+    function sendOrder() {
+        const order = [...document.querySelectorAll('.rank-item')].map(li => li.innerText);
+        locked = true; updateUI();
+        if(!truth) { conn.send({type:'TRUTH', order}); truth = order; }
+        else { conn.send({type:'GUESS', order}); revealAll(truth, order); }
+    }
+
+    function revealAll(truthArr, guessArr) {
+        show('screen-results');
+        const stack = document.getElementById('full-reveal');
+        stack.innerHTML = "";
+        let pts = 0;
+
+        truthArr.forEach((item, i) => {
+            const gIdx = guessArr.indexOf(item);
+            const dist = Math.abs(i - gIdx);
+            if(dist === 0) pts += 2; else if(dist === 1) pts += 1;
+            const div = document.createElement('div');
+            div.className = `res-item ${dist === 0 ? 'perfect' : (dist === 1 ? 'close' : '')}`;
+            div.innerHTML = `<div class="res-rank">#${i + 1}</div><div class="res-content"><b>${item}</b><br><small>Guess: #${gIdx+1}</small></div>`;
+            stack.appendChild(div);
+        });
+        
+        totalScore += Math.round((pts/10)*100);
+        document.getElementById('score-display').innerText = Math.round((pts/10)*100) + "%";
+        
+        // Host gets the active button, Guest gets a waiting message
+        const nextArea = document.getElementById('next-action-area');
+        if (myRole === 'host') {
+            nextArea.innerHTML = `<button class="btn-main" onclick="hostNext()">${currentIdx + 1 >= maxRounds ? 'Finish Game' : 'Next Question →'}</button>`;
+        } else {
+            nextArea.innerHTML = `<button class="btn-wait" disabled>Waiting for Host...</button>`;
+        }
+    }
+
+    function hostNext() {
+        if (currentIdx + 1 >= maxRounds) {
+            showFinalScore();
+            conn.send({type: 'NEXT'}); // Trigger guest to final screen
+        } else {
+            currentIdx++;
+            conn.send({type: 'NEXT'});
+            startRound();
+        }
+    }
+
+    function showFinalScore() {
+        show('screen-final');
+        document.getElementById('final-score').innerText = Math.round(totalScore / maxRounds) + "%";
+    }
+
+    function renderList(opts) {
+        const list = document.getElementById('rank-list');
+        list.innerHTML = "";
+        opts.sort(()=>Math.random()-0.5).forEach(t => {
+            const li = document.createElement('div');
+            li.className = 'rank-item'; li.draggable = true; li.innerText = t;
+            li.addEventListener('dragstart', () => { if(!locked) li.classList.add('dragging') });
+            li.addEventListener('dragend', () => li.classList.remove('dragging'));
+            list.appendChild(li);
+        });
+    }
+
+    document.getElementById('rank-list').addEventListener('dragover', e => {
+        if(locked) return;
+        e.preventDefault();
+        const dragging = document.querySelector('.dragging');
+        const list = document.getElementById('rank-list');
+        const after = [...list.querySelectorAll('.rank-item:not(.dragging)')].find(el => e.clientY <= el.getBoundingClientRect().top + el.height/2);
+        list.insertBefore(dragging, after || null);
+    });
+
+    function show(id) { document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
 </script>
-
 </body>
 </html>
