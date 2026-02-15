@@ -11,7 +11,7 @@
         .container { max-width:480px; width:100%; background:var(--card); padding:1.5rem; border-radius:24px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.3); max-height:95vh; overflow-y:auto; position: relative; }
         .hidden { display:none !important; }
         button { width:100%; padding:1.1rem; border:none; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:8px; transition:0.2s; font-size:1rem; color:white; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
         .btn-main { background:var(--p1); }
         .btn-alt { background:var(--p2); }
         .btn-outline { background:#334155; border:1px solid #475569; }
@@ -29,7 +29,7 @@
 <body>
 
 <div class="container">
-    <div id="status" style="font-size:0.6rem; color:var(--near); margin-bottom:5px; text-transform:uppercase;">System Ready</div>
+    <div id="status" style="font-size:0.6rem; color:var(--near); margin-bottom:5px; text-transform:uppercase;">Initializing...</div>
     
     <div id="live-points" class="hidden">
         <span id="p-host-score" style="color:var(--p1)">Host: 0</span>
@@ -51,7 +51,7 @@
             <option value="10" selected>Standard (10 Rounds)</option>
             <option value="20">Marathon (20 Rounds)</option>
         </select>
-        <button class="btn-main" onclick="startHost()">Host Versus Match</button>
+        <button id="host-btn" class="btn-main" onclick="startHost()" disabled>Loading Bank...</button>
         <input id="join-id" placeholder="Partner Code" type="tel" style="margin-top:15px;">
         <button class="btn-outline" onclick="startJoin()">Join Game</button>
     </div>
@@ -78,27 +78,34 @@
 </div>
 
 <script>
-const bank = {
-    gaming: [
-        {q:"Best RPG Class?",opts:["Warrior","Mage","Rogue","Healer","Archer"]},
-        {q:"Gaming Platform?",opts:["High-end PC","PlayStation","Xbox","Switch","Mobile"]},
-        {q:"Worst Level?",opts:["Water Level","Escort Mission","Sewer","Tutorial","Ice/Slippery"]},
-        {q:"Satisfaction?",opts:["Boss Kill","Rare Loot","Level Up","Discovery","Story Ending"]},
-        {q:"Genre?",opts:["Open World","FPS","Survival","Puzzle","Horror"]}
-    ],
-    personal: [
-        {q:"Social Battery?",opts:["Introvert","Extrovert","Selective","Ambivert","Homebody"]},
-        {q:"Decision Style?",opts:["Logic","Emotion","Coin Flip","Ask Others","Gut Feeling"]},
-        {q:"Superpower?",opts:["Flight","Invisibility","Time Travel","Mind Reading","Teleport"]}
-    ],
-    travel: [{q:"Destiny?",opts:["Beach","Mountain","City","Ruins","Forest"]}],
-    career: [{q:"Value?",opts:["Salary","Balance","Impact","Security","Freedom"]}],
-    romance: [{q:"Date?",opts:["Dinner","Arcade","Cinema","Picnic","Coffee"]}]
-};
-
+let bank = null; // Initially empty, filled via Fetch
 let peer, conn, role, idx=0, max=10, mode="gaming", truth=null, locked=false;
 let scores = { host: 0, guest: 0 }, deck = [], currentDesigner="host";
 let stealInterval;
+
+// Load external JSON
+async function initGame() {
+    try {
+        const response = await fetch('questions.json');
+        bank = await response.json();
+        document.getElementById("status").innerText = "System Ready";
+        const hBtn = document.getElementById("host-btn");
+        hBtn.disabled = false;
+        hBtn.innerText = "Host Versus Match";
+    } catch (e) {
+        document.getElementById("status").innerText = "Error Loading Questions";
+        console.error("Could not load questions.json", e);
+    }
+}
+
+// Optimized Fisher-Yates Shuffle
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
 
 function show(id) { 
     document.querySelectorAll(".container > div:not(#status):not(#live-points)").forEach(d => d.classList.add("hidden")); 
@@ -106,10 +113,16 @@ function show(id) {
 }
 
 function startHost() {
+    if(!bank) return;
     mode = document.getElementById("mode-select").value;
     max = parseInt(document.getElementById("round-select").value);
-    let pool = (bank[mode] || Object.values(bank).flat()).sort(() => Math.random() - 0.5);
-    deck = pool.slice(0, max);
+    
+    // Efficient pool handling
+    let pool = (mode === 'chaos') ? [].concat(...Object.values(bank)) : [...bank[mode]];
+    
+    // Shuffle the large pool and take only what we need
+    deck = shuffle(pool).slice(0, max);
+    
     peer = new Peer(Math.floor(1000 + Math.random() * 9000) + ""); role = "host";
     peer.on("open", id => { document.getElementById("room-id").innerText = id; show("screen-wait"); });
     peer.on("connection", c => { conn = c; setup(); });
@@ -122,6 +135,7 @@ function startJoin() {
 
 function setup() {
     conn.on("open", () => { 
+        document.getElementById("status").innerText = "Connection Live";
         document.getElementById("live-points").classList.remove("hidden");
         if(role === "guest") conn.send({ type: "READY" }); 
     });
@@ -153,6 +167,11 @@ function round() {
 
 function replay() {
     locked = false; 
+    const btn = document.getElementById("submit");
+    btn.disabled = false;
+    btn.innerText = "Lock My Order";
+    btn.classList.remove("hidden");
+
     document.getElementById("question").innerText = deck[idx].q;
     document.getElementById("round-info").innerText = `Round ${idx + 1} of ${max}`;
     const isGuesserWaiting = (role !== currentDesigner && !truth);
@@ -179,10 +198,21 @@ function render(opts, isPreview) {
 }
 
 function sendOrder() {
+    const btn = document.getElementById("submit");
+    btn.innerText = "Entry Submitted! ✓";
+    btn.disabled = true;
+    
     const order = [...document.querySelectorAll(".rank-item")].map(x => x.innerText);
-    locked = true; ui();
-    if(!truth) { truth = order; conn.send({ type: "TRUTH", order }); }
-    else { conn.send({ type: "GUESS", order }); reveal(truth, order); }
+    locked = true; 
+    
+    if(!truth) { 
+        truth = order; 
+        conn.send({ type: "TRUTH", order }); 
+    }
+    else { 
+        conn.send({ type: "GUESS", order }); 
+        reveal(truth, order); 
+    }
 }
 
 function reveal(t, g) {
@@ -258,6 +288,9 @@ document.addEventListener("pointermove", e => {
     }
 });
 document.addEventListener("pointerup", () => { if(active) active.classList.remove("active"); active = null; });
+
+// Run the fetch on load
+initGame();
 </script>
 </body>
 </html>
