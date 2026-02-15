@@ -24,7 +24,6 @@ input,select{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;backg
 .result-perfect{border-left:5px solid var(--success);background:rgba(34,197,94,0.15);}
 .result-close{border-left:5px solid var(--near);background:rgba(234,179,8,0.15);}
 .result-wrong{border-left:5px solid #64748b;background:rgba(100,116,139,0.15);}
-/* History Styles */
 .history-card{background:rgba(0,0,0,0.2); border-radius:12px; padding:10px; margin-bottom:10px; text-align:left; border:1px solid #334155;}
 .history-q{font-weight:bold; font-size:0.85rem; margin-bottom:4px; display:block;}
 .history-score{float:right; font-weight:900; color:var(--p1);}
@@ -36,26 +35,57 @@ input,select{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;backg
 
 <div id="screen-start" class="game-screen">
     <h1>DuoRanker</h1>
-    <select id="mode-select" onchange="toggleLength()"><option value="romance">Romance Mode</option><option value="personal">Personal Mode</option><option value="custom">Custom Creator Mode</option></select>
-    <div id="len-wrap"><select id="length-select"><option value="10">10 Questions</option><option value="20">20 Questions</option><option value="30">30 Questions</option></select></div>
+    <select id="mode-select" onchange="toggleLength()">
+        <option value="romance">Romance Mode</option>
+        <option value="personal">Personal Mode</option>
+        <option value="custom">Custom Creator Mode</option>
+    </select>
+    <div id="len-wrap">
+        <select id="length-select">
+            <option value="5">5 Questions</option>
+            <option value="10">10 Questions</option>
+            <option value="20">20 Questions</option>
+            <option value="30">30 Questions</option>
+        </select>
+    </div>
     <button class="btn-main" onclick="startHost()">Host Game</button>
     <div style="margin:15px;color:#475569;font-size:.8rem;">OR</div>
-    <input id="join-id" placeholder="Partner's Code" type="tel"><button style="background:#334155;color:white;" onclick="startJoin()">Join Game</button>
+    <input id="join-id" placeholder="Partner's Code" type="tel">
+    <button style="background:#334155;color:white;" onclick="startJoin()">Join Game</button>
 </div>
 
-<div id="screen-wait" class="game-screen hidden"><p>Room Created!</p><h1 id="room-id" style="font-size:3.5rem;color:var(--p1);letter-spacing:4px;">----</h1><p style="opacity:.7;">Waiting for partner...</p></div>
+<div id="screen-wait" class="game-screen hidden">
+    <p>Room Created!</p>
+    <h1 id="room-id" style="font-size:3.5rem;color:var(--p1);letter-spacing:4px;">----</h1>
+    <p style="opacity:.7;">Waiting for partner...</p>
+</div>
 
 <div id="screen-custom-build" class="game-screen hidden">
-    <h2>Design Your Question</h2><input id="c-q" placeholder="The Question"><div style="background:rgba(0,0,0,0.2);padding:15px;border-radius:15px;margin-top:10px;"><input class="c-opt" placeholder="Option 1"><input class="c-opt" placeholder="Option 2"><input class="c-opt" placeholder="Option 3"><input class="c-opt" placeholder="Option 4"><input class="c-opt" placeholder="Option 5"></div>
+    <h2>Design Your Question</h2>
+    <input id="c-q" placeholder="The Question">
+    <div style="background:rgba(0,0,0,0.2);padding:15px;border-radius:15px;margin-top:10px;">
+        <input class="c-opt" placeholder="Option 1"><input class="c-opt" placeholder="Option 2"><input class="c-opt" placeholder="Option 3"><input class="c-opt" placeholder="Option 4"><input class="c-opt" placeholder="Option 5">
+    </div>
     <button class="btn-alt" onclick="submitCustom()">Send to Guesser</button>
 </div>
 
-<div id="screen-game" class="game-screen hidden"><div id="role" style="font-size:0.75rem;text-transform:uppercase;font-weight:900;letter-spacing:1.5px;margin-bottom:8px;"></div><h2 id="question"></h2><div id="rank-list"></div><button id="submit" class="btn-main" onclick="sendOrder()">Lock My Order</button><p id="round" style="font-size:.7rem;color:#64748b;margin-top:10px;"></p></div>
+<div id="screen-game" class="game-screen hidden">
+    <div id="role" style="font-size:0.75rem;text-transform:uppercase;font-weight:900;letter-spacing:1.5px;margin-bottom:8px;"></div>
+    <h2 id="question"></h2>
+    <div id="rank-list"></div>
+    <button id="submit" class="btn-main" onclick="sendOrder()">Lock My Order</button>
+    <p id="round" style="font-size:.7rem;color:#64748b;margin-top:10px;"></p>
+</div>
 
-<div id="screen-results" class="game-screen hidden"><h2 id="res-score" style="color:var(--p2);margin-bottom:10px;">0% Match</h2><div id="result-list"></div><div id="controls" style="margin-top:20px;"></div></div>
+<div id="screen-results" class="game-screen hidden">
+    <h2 id="res-score" style="color:var(--p2);margin-bottom:10px;">0% Match</h2>
+    <div id="result-list"></div>
+    <div id="controls" style="margin-top:20px;"></div>
+</div>
 
 <div id="screen-final" class="game-screen hidden">
-    <p>Overall Compatibility</p><h1 id="final" style="font-size:5rem;color:var(--p1);margin:0;">0%</h1>
+    <p>Overall Compatibility</p>
+    <h1 id="final" style="font-size:5rem;color:var(--p1);margin:0;">0%</h1>
     <h3 style="margin-top:20px; text-align:left; font-size:0.9rem; opacity:0.8;">Match History</h3>
     <div id="history-list" style="max-height:250px; overflow-y:auto; margin-top:10px; padding-right:5px;"></div>
     <button class="btn-main" onclick="location.reload()" style="margin-top:20px;">New Game</button>
@@ -63,23 +93,34 @@ input,select{width:100%;padding:12px;margin-bottom:10px;border-radius:10px;backg
 </div>
 
 <script>
-// Logic & 100 Question Bank (Shortened for display, but fully functional)
-const bank = { romance: [
-    {q:"Ideal First Date?",opts:["Fine Dining","Quiet Coffee","Gaming Arcade","Sunset Picnic","Movie Night"]},
-    {q:"Best Gesture?",opts:["Love Letter","Surprise Trip","Home Cooked Meal","Thoughtful Gift","Warm Hug"]},
-    {q:"Love Language?",opts:["Words of Affirmation","Acts of Service","Receiving Gifts","Quality Time","Physical Touch"]},
-    {q:"Dream Honeymoon?",opts:["Tropical Island","European City","Mountain Cabin","Theme Park","Cruise"]},
-    {q:"Couples Activity?",opts:["Cooking Class","Hiking","Dance Lesson","Stargazing","Thrifting"]}
-    /* ... 45 more romance questions ... */
-], personal: [
-    {q:"Life Phase?",opts:["Childhood Heart","Teen Spirit","Young Adult Grind","Stable/Established","Reflective/Wise"]},
-    {q:"Biggest Fear?",opts:["Failure","Loneliness","Physical Pain","Public Speaking","Losing Control"]},
-    {q:"Social Battery?",opts:["True Introvert","True Extrovert","Selective Socialite","Social Introvert","Homebody"]},
-    {q:"Morning Habit?",opts:["Snooze Master","Phone Checker","Early Bird Gym","Quiet Meditation","Straight to Coffee"]}
-    /* ... 46 more personal questions ... */
-]};
+const bank = { 
+    romance: [
+        {q:"Ideal First Date?",opts:["Fine Dining","Quiet Coffee","Gaming Arcade","Sunset Picnic","Movie Night"]},
+        {q:"Best Gesture?",opts:["Love Letter","Surprise Trip","Home Cooked Meal","Thoughtful Gift","Warm Hug"]},
+        {q:"Love Language?",opts:["Words of Affirmation","Acts of Service","Receiving Gifts","Quality Time","Physical Touch"]},
+        {q:"Dream Honeymoon?",opts:["Tropical Island","European City","Mountain Cabin","Theme Park","Cruise"]},
+        {q:"Couples Activity?",opts:["Cooking Class","Hiking","Dance Lesson","Stargazing","Thrifting"]},
+        {q:"Relationship Goal?",opts:["Building a Home","Travel the World","Raising a Family","Best Friends First","Power Couple Success"]},
+        {q:"Favorite Morning?",opts:["Wake up Cuddles","Coffee for two","Gym Session","Cooking Breakfast","Silent Reading"]},
+        {q:"Conflict Style?",opts:["Talking it out","Cooling off first","Writing a note","Humor/Joke","Physical Comfort"]},
+        {q:"Photo Style?",opts:["Silly Selfies","Candid Shots","Professional Shoot","Landscape Scenery","Retro Film"]},
+        {q:"Ideal Soundtrack?",opts:["Jazz/Soul","Pop Hits","Acoustic Indie","Rock Ballads","Lo-Fi Beats"]}
+    ], 
+    personal: [
+        {q:"Life Phase?",opts:["Childhood Heart","Teen Spirit","Young Adult Grind","Stable/Established","Reflective/Wise"]},
+        {q:"Biggest Fear?",opts:["Failure","Loneliness","Physical Pain","Public Speaking","Losing Control"]},
+        {q:"Social Battery?",opts:["True Introvert","True Extrovert","Selective Socialite","Social Introvert","Homebody"]},
+        {q:"Best Stress Relief?",opts:["Sleeping","Gaming","Exercise","Vent Session","Cleaning"]},
+        {q:"Morning Habit?",opts:["Snooze Master","Phone Checker","Early Bird Gym","Quiet Meditation","Straight to Coffee"]},
+        {q:"Decision Making?",opts:["Logical Analysis","Heart/Emotion","Flip a coin","Ask Everyone","Gut Feeling"]},
+        {q:"Travel Style?",opts:["Planned Itinerary","Go with flow","Luxury Comfort","Backpacking","Group Tours"]},
+        {q:"Best Quality?",opts:["Sense of Humor","Intelligence","Empathy","Resilience","Integrity"]},
+        {q:"Top Priority?",opts:["Family","Health","Wealth","Happiness","Legacy"]},
+        {q:"Dream Skill?",opts:["Teleportation","Mind Reading","Speak All Languages","Time Travel","Healing Power"]}
+    ]
+};
 
-let peer, conn, role, idx=0, mode="romance", max=10, truth=null, locked=false, total=0, customData=null, deck=[], matchHistory=[];
+let peer, conn, role, idx=0, mode="romance", max=5, truth=null, locked=false, total=0, customData=null, deck=[], matchHistory=[];
 
 function toggleLength(){ document.getElementById('len-wrap').classList.toggle('hidden', document.getElementById('mode-select').value === 'custom'); }
 function show(id){ document.querySelectorAll(".game-screen").forEach(s=>s.classList.add("hidden")); document.getElementById(id).classList.remove("hidden"); }
@@ -120,7 +161,7 @@ function ui(){
     const r=document.getElementById("role");const b=document.getElementById("submit");
     r.innerText=isCreator?"Set Your Truth":(truth?"Guess Their Truth":"Partner is Ranking...");
     r.style.color=isCreator?"var(--p2)":"var(--p1)";
-    b.classList.toggle("hidden",!isCreator&&!truth);b.disabled=locked;b.innerText=locked?"Sent":"Lock Order";
+    b.classList.toggle("hidden",!isCreator&&!truth);b.disabled=locked;b.innerText=locked?"Locked":"Lock Order";
 }
 
 function sendOrder(){
@@ -143,15 +184,12 @@ function reveal(t,g){
         list.appendChild(div);
     });
     const s=Math.round((pts/(t.length*2))*100); total+=s;
-    
-    // Save to History
     matchHistory.push({ q: document.getElementById("question").innerText, score: s });
-
     document.getElementById("res-score").innerText=s+"% Match";
     const ctrl=document.getElementById("controls");ctrl.innerHTML="";
     if(role==="host"){
         const btn=document.createElement("button");btn.className="btn-main";
-        btn.innerText=(idx+1>=max)?"View Final Results":"Next Round →";
+        btn.innerText=(idx+1>=max)?"Final Results":"Next Round →";
         btn.onclick=()=>{idx++;conn.send({type:"NEXT",i:idx});if(idx>=max)showFinal();else round();};
         ctrl.appendChild(btn);
     }
@@ -177,7 +215,7 @@ function render(opts){
     });
 }
 
-// Standard Drag Logic remains the same...
+// Drag logic
 let active=null,startY=0;
 const rList=document.getElementById("rank-list");
 rList.addEventListener("pointerdown",e=>{
