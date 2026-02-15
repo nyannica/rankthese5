@@ -3,21 +3,31 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DuoRanker - Smooth Swipe Multiplayer</title>
+
+<title>DuoRanker Multiplayer</title>
+
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 
 <style>
-:root { --p1:#6366f1; --p2:#ec4899; --bg:#0f172a; --card:#1e293b; --text:#f8fafc; --success:#22c55e; --near:#eab308; }
+:root{
+--p1:#6366f1;
+--p2:#ec4899;
+--bg:#0f172a;
+--card:#1e293b;
+--text:#f8fafc;
+--near:#eab308;
+}
 
 body{
-font-family:'Segoe UI',system-ui;
+margin:0;
+font-family:system-ui;
 background:var(--bg);
 color:var(--text);
 display:flex;
 justify-content:center;
-padding:1rem;
+align-items:center;
 min-height:100vh;
-margin:0;
+padding:1rem;
 }
 
 .container{
@@ -25,71 +35,59 @@ max-width:480px;
 width:100%;
 background:var(--card);
 padding:1.5rem;
-border-radius:28px;
+border-radius:24px;
 text-align:center;
-align-self:center;
-box-shadow:0 25px 50px -12px rgba(0,0,0,0.5);
 }
 
-.role-banner{
-padding:10px;
+.hidden{display:none;}
+
+button{
+width:100%;
+padding:1rem;
+border:none;
 border-radius:12px;
-font-size:.85rem;
-font-weight:800;
-text-transform:uppercase;
-margin-bottom:15px;
+font-weight:bold;
+cursor:pointer;
+margin-top:8px;
 }
 
-.role-chooser{background:rgba(236,72,153,.1);border:1px solid var(--p2);color:var(--p2);}
-.role-guesser{background:rgba(99,102,241,.1);border:1px solid var(--p1);color:var(--p1);}
+.btn-main{background:var(--p1);color:white;}
+.btn-wait{background:#111827;color:#555;border:1px solid #333;cursor:not-allowed;}
+
+input,select{
+width:100%;
+padding:10px;
+margin-bottom:10px;
+border-radius:10px;
+background:#111827;
+color:white;
+border:1px solid #333;
+}
 
 .rank-item{
 background:#334155;
-margin-bottom:10px;
-padding:1rem;
-border-radius:14px;
+padding:12px;
+margin-bottom:8px;
+border-radius:12px;
 cursor:grab;
-font-size:.95rem;
 touch-action:none;
 transition:transform .15s ease, box-shadow .15s ease;
 }
 
 .rank-item.active{
-cursor:grabbing;
 transform:scale(1.05);
-box-shadow:0 10px 25px rgba(0,0,0,.4);
-z-index:1000;
+box-shadow:0 8px 20px rgba(0,0,0,.4);
+cursor:grabbing;
 }
 
-button{
-width:100%;
-padding:1.1rem;
-border-radius:14px;
-border:none;
-font-weight:bold;
-cursor:pointer;
-font-size:1rem;
-margin-top:10px;
+.fade-in{
+animation:fade .25s ease;
 }
 
-.btn-main{background:var(--p1);color:white;}
-.btn-wait{background:#0f172a;color:#475569;border:1px solid #334155;cursor:not-allowed;}
-
-select,input{
-width:100%;
-padding:12px;
-border-radius:12px;
-background:#0f172a;
-color:white;
-border:1px solid #475569;
-margin-bottom:15px;
-box-sizing:border-box;
+@keyframes fade{
+from{opacity:0;transform:translateY(5px);}
+to{opacity:1;transform:translateY(0);}
 }
-
-.hidden{display:none;}
-
-.fade-in{animation:fadeIn .25s ease-in-out;}
-@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 </style>
 </head>
 
@@ -97,10 +95,9 @@ box-sizing:border-box;
 
 <div class="container">
 
-<div id="connection-status" style="font-size:.8rem;color:#eab308;margin-bottom:8px;">
-Disconnected
-</div>
+<div id="status" style="font-size:.8rem;color:var(--near)">Disconnected</div>
 
+<!-- START -->
 <div id="screen-start">
 <h1>DuoRanker</h1>
 
@@ -115,51 +112,54 @@ Disconnected
 <option value="30">30 Questions</option>
 </select>
 
-<button class="btn-main" onclick="startHost()">Host Game</button>
+<button class="btn-main" onclick="startHost()">Host</button>
 
-<div style="margin:15px;color:#475569;">— OR —</div>
+<div style="margin:10px">— OR —</div>
 
-<input type="text" id="join-id" placeholder="Code">
-<button style="background:#334155;color:white;" onclick="startJoin()">Join Partner</button>
+<input id="join-id" placeholder="Room Code">
+<button onclick="startJoin()">Join</button>
 </div>
 
-<div id="screen-waiting" class="hidden">
-<h3>Room Code</h3>
-<h1 id="my-id-display" style="font-size:3.5rem;color:var(--p1);margin:0;">----</h1>
+<!-- WAIT -->
+<div id="screen-wait" class="hidden">
+<h2>Room Code</h2>
+<h1 id="room-id">----</h1>
 </div>
 
+<!-- GAME -->
 <div id="screen-game" class="hidden">
-<div id="role-indicator" class="role-banner">Role</div>
-<div id="timer" style="font-size:1.2rem;font-weight:bold;color:#eab308;">20s</div>
-<h2 id="question-text">...</h2>
+<h3 id="role"></h3>
+<div id="timer">20s</div>
+<h2 id="question"></h2>
 <div id="rank-list"></div>
-<button id="submit-btn" class="btn-main" onclick="sendOrder()">Lock Order</button>
-<p id="round-counter" style="font-size:.8rem;color:#64748b;"></p>
+<button id="submit" class="btn-main" onclick="sendOrder()">Lock Order</button>
+<p id="round"></p>
 </div>
 
+<!-- RESULTS -->
 <div id="screen-results" class="hidden">
-<h2 id="score-display">0%</h2>
-<div id="host-control-area"></div>
+<h1 id="score">0%</h1>
+<div id="controls"></div>
 </div>
 
+<!-- FINAL -->
 <div id="screen-final" class="hidden">
 <h1>Game Over</h1>
-<h1 id="final-score">0%</h1>
-<button class="btn-main" onclick="location.reload()">Home</button>
+<h1 id="final">0%</h1>
+<button onclick="location.reload()">Home</button>
 </div>
 
 </div>
 
-<audio id="click-sfx" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
-<audio id="score-sfx" src="https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar_boing.ogg"></audio>
+<audio id="click" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 
 <script>
-/* ---------- QUESTION BANK ---------- */
+/* ---------- DATA ---------- */
 
-const questionBank={
+const bank={
 romance:[
 {q:"Ideal First Date?",opts:["Dinner","Coffee","Arcade","Picnic","Movie"]},
-{q:"Best Gesture?",opts:["Letter","Trip","Cooking","Gifts","Hug"]}
+{q:"Best Gesture?",opts:["Letter","Trip","Cooking","Gift","Hug"]}
 ],
 personal:[
 {q:"Life Phase?",opts:["Childhood","Teen","Adult","Career","Retirement"]},
@@ -167,185 +167,173 @@ personal:[
 ]
 };
 
-/* ---------- GLOBAL STATE ---------- */
+/* ---------- STATE ---------- */
 
-let peer,conn,myRole;
-let currentIdx=0,mode="romance",maxRounds=10;
-let truth=null,locked=false,totalScore=0;
-let reconnectAttempts=0;
-let roundTimer=null,timeLeft=20,paused=false;
+let peer,conn,role;
+let idx=0,mode="romance",max=10;
+let truth=null,locked=false,total=0;
+let timer=null,time=20,paused=false;
 
-/* ---------- AUDIO ---------- */
+/* ---------- UI ---------- */
 
-function playSound(id){
-const s=document.getElementById(id);
-if(s){s.currentTime=0;s.play();}
+function show(id){
+document.querySelectorAll(".container>div")
+.forEach(d=>d.classList.add("hidden"));
+document.getElementById(id).classList.remove("hidden");
 }
 
-/* ---------- NETWORK ---------- */
+function status(t){
+document.getElementById("status").innerText=t;
+}
+
+/* ---------- HOST ---------- */
 
 function startHost(){
 mode=document.getElementById("mode-select").value;
-maxRounds=parseInt(document.getElementById("length-select").value);
+max=parseInt(document.getElementById("length-select").value);
 
-peer=new Peer(Math.floor(1000+Math.random()*9000).toString());
-myRole="host";
+peer=new Peer(Math.floor(1000+Math.random()*9000)+"");
+role="host";
 
 peer.on("open",id=>{
-document.getElementById("my-id-display").innerText=id;
-show("screen-waiting");
+document.getElementById("room-id").innerText=id;
+show("screen-wait");
 });
 
 peer.on("connection",c=>{
 conn=c;
-setupConn();
+setup();
 });
 }
+
+/* ---------- GUEST ---------- */
 
 function startJoin(){
 peer=new Peer();
-myRole="guest";
+role="guest";
 
 peer.on("open",()=>{
 conn=peer.connect(document.getElementById("join-id").value);
-setupConn();
+setup();
 });
 }
 
-function setupConn(){
+/* ---------- CONNECTION ---------- */
+
+function setup(){
 
 conn.on("open",()=>{
-updateStatus("Connected");
+status("Connected");
 
-if(myRole==="host"){
-conn.send({type:"INIT",mode,maxRounds});
-sendGameState();
+if(role==="host"){
+conn.send({type:"INIT",mode,max});
+sync();
 show("screen-game");
-startRound();
+round();
 }
 });
-
-conn.on("close",handleDisconnect);
-conn.on("error",handleDisconnect);
 
 conn.on("data",d=>{
 
 if(d.type==="INIT"){
 mode=d.mode;
-maxRounds=d.maxRounds;
+max=d.max;
+show("screen-game"); // ⭐ guest enters game
 }
 
 if(d.type==="SYNC"){
-currentIdx=d.state.currentIdx;
-mode=d.state.mode;
-maxRounds=d.state.maxRounds;
-truth=d.state.truth;
-paused=d.state.paused;
-timeLeft=d.state.timeLeft;
-
-startRound();
+idx=d.s.idx;
+truth=d.s.truth;
+paused=d.s.paused;
+time=d.s.time;
+show("screen-game"); // ⭐ guest sync fix
+round();
 startTimer();
 }
 
-if(d.type==="TRUTH"){truth=d.order;updateUI();}
-if(d.type==="GUESS"){revealAll(truth,d.order);}
+if(d.type==="TRUTH"){truth=d.order;ui();}
+if(d.type==="GUESS"){reveal(truth,d.order);}
 
 if(d.type==="NEXT"){
-currentIdx=d.index;
-if(currentIdx>=maxRounds)showFinalScore();
-else startRound();
+idx=d.i;
+if(idx>=max)final();
+else round();
 }
 
 if(d.type==="PAUSE"){
-paused=d.paused;
+paused=d.p;
 if(!paused)startTimer();
 }
 
 });
+
+conn.on("close",()=>status("Disconnected"));
 }
 
-function handleDisconnect(){
-updateStatus("Reconnecting...");
-if(myRole==="guest"&&reconnectAttempts<5){
-reconnectAttempts++;
-setTimeout(startJoin,1500);
-}
-}
+/* ---------- SYNC ---------- */
 
-function sendGameState(){
-if(myRole!=="host")return;
-
+function sync(){
+if(role!=="host")return;
 conn.send({
 type:"SYNC",
-state:{
-currentIdx,
-mode,
-maxRounds,
-truth,
-paused,
-timeLeft
-}
+s:{idx,truth,paused,time}
 });
 }
 
-/* ---------- GAME FLOW ---------- */
+/* ---------- ROUND ---------- */
 
-function startRound(){
-if(currentIdx>=maxRounds)return;
-
+function round(){
 truth=null;
 locked=false;
-timeLeft=20;
+time=20;
 
-const qSet=questionBank[mode];
-const q=qSet[currentIdx%qSet.length];
+const q=bank[mode][idx%bank[mode].length];
 
-document.getElementById("question-text").innerText=q.q;
-document.getElementById("round-counter").innerText=
-`Round ${currentIdx+1} / ${maxRounds}`;
+document.getElementById("question").innerText=q.q;
+document.getElementById("round").innerText=
+`Round ${idx+1}/${max}`;
 
-renderList(q.opts);
-updateUI();
+render(q.opts);
+ui();
 startTimer();
 }
 
-function updateUI(){
-
-const role=document.getElementById("role-indicator");
-const btn=document.getElementById("submit-btn");
+function ui(){
 
 const chooser=
-(currentIdx%2===0&&myRole==="host")||
-(currentIdx%2!==0&&myRole==="guest");
+(idx%2===0&&role==="host")||
+(idx%2!==0&&role==="guest");
+
+const r=document.getElementById("role");
+const b=document.getElementById("submit");
 
 if(chooser){
-role.innerText="Chooser";
-role.className="role-banner role-chooser";
-btn.classList.remove("hidden");
+r.innerText="Chooser";
+b.classList.remove("hidden");
 }
 else if(!truth){
-role.innerText="Waiting...";
-role.className="role-banner role-guesser";
-btn.classList.add("hidden");
+r.innerText="Waiting...";
+b.classList.add("hidden");
 }
 else{
-role.innerText="Guess Now";
-role.className="role-banner role-guesser";
-btn.classList.remove("hidden");
+r.innerText="Guess";
+b.classList.remove("hidden");
 }
 
-btn.disabled=locked;
+b.disabled=locked;
 }
+
+/* ---------- ORDER ---------- */
 
 function sendOrder(){
 
-playSound("click-sfx");
+document.getElementById("click").play();
 
 const order=[...document.querySelectorAll(".rank-item")]
-.map(li=>li.innerText);
+.map(x=>x.innerText);
 
 locked=true;
-updateUI();
+ui();
 
 if(!truth){
 truth=order;
@@ -353,165 +341,140 @@ conn.send({type:"TRUTH",order});
 }
 else{
 conn.send({type:"GUESS",order});
-revealAll(truth,order);
+reveal(truth,order);
 }
 }
 
-function revealAll(truthArr,guessArr){
+/* ---------- RESULTS ---------- */
+
+function reveal(t,g){
 
 show("screen-results");
-playSound("score-sfx");
 
 let pts=0;
 
-truthArr.forEach((item,i)=>{
-const g=guessArr.indexOf(item);
-const d=Math.abs(i-g);
+t.forEach((x,i)=>{
+const d=Math.abs(i-g.indexOf(x));
 if(d===0)pts+=2;
 else if(d===1)pts+=1;
 });
 
-const score=Math.round((pts/10)*100);
-totalScore+=score;
-document.getElementById("score-display").innerText=score+"%";
+const s=Math.round((pts/10)*100);
+total+=s;
+document.getElementById("score").innerText=s+"%";
 
-const area=document.getElementById("host-control-area");
+const c=document.getElementById("controls");
 
-if(myRole==="host"){
-area.innerHTML=`
-<button class="btn-main" onclick="togglePause()">
-${paused?"Resume ▶":"Pause ⏸"}
-</button>
-<button class="btn-main" onclick="triggerHostNext()">
-${currentIdx+1>=maxRounds?"Finish":"Next →"}
+if(role==="host"){
+c.innerHTML=`
+<button onclick="pause()">${paused?"Resume":"Pause"}</button>
+<button onclick="next()">
+${idx+1>=max?"Finish":"Next"}
 </button>`;
 }
 else{
-area.innerHTML=`<button class="btn-wait">Waiting for Host...</button>`;
+c.innerHTML=`<button class="btn-wait">Waiting...</button>`;
 }
 }
 
-function triggerHostNext(){
-if(myRole!=="host")return;
+/* ---------- NEXT ---------- */
 
-const next=currentIdx+1;
-currentIdx=next;
+function next(){
+if(role!=="host")return;
 
-conn.send({type:"NEXT",index:next});
+idx++;
+conn.send({type:"NEXT",i:idx});
 
-if(next>=maxRounds)showFinalScore();
-else startRound();
+if(idx>=max)final();
+else round();
 }
 
-function togglePause(){
-if(myRole!=="host")return;
+/* ---------- PAUSE ---------- */
 
+function pause(){
+if(role!=="host")return;
 paused=!paused;
-conn.send({type:"PAUSE",paused});
+conn.send({type:"PAUSE",p:paused});
 if(!paused)startTimer();
 }
 
-function showFinalScore(){
+/* ---------- FINAL ---------- */
+
+function final(){
 show("screen-final");
-document.getElementById("final-score").innerText=
-Math.round(totalScore/maxRounds)+"%";
+document.getElementById("final").innerText=
+Math.round(total/max)+"%";
 }
 
 /* ---------- TIMER ---------- */
 
 function startTimer(){
-clearInterval(roundTimer);
-document.getElementById("timer").innerText=timeLeft+"s";
+clearInterval(timer);
 
-roundTimer=setInterval(()=>{
+timer=setInterval(()=>{
 if(paused)return;
 
-timeLeft--;
-document.getElementById("timer").innerText=timeLeft+"s";
+time--;
+document.getElementById("timer").innerText=time+"s";
 
-if(timeLeft<=0){
-clearInterval(roundTimer);
+if(time<=0){
+clearInterval(timer);
 if(!locked)sendOrder();
 }
 },1000);
 }
 
-/* ---------- SMOOTH SWIPE SORT ---------- */
+/* ---------- SWIPE SORT ---------- */
 
-let activeItem=null;
-let startY=0;
-
+let active=null,startY=0;
 const list=document.getElementById("rank-list");
 
 list.addEventListener("pointerdown",e=>{
 if(locked)return;
-
 const item=e.target.closest(".rank-item");
 if(!item)return;
 
-activeItem=item;
+active=item;
 startY=e.clientY;
 item.classList.add("active");
 item.setPointerCapture(e.pointerId);
 });
 
 list.addEventListener("pointermove",e=>{
-if(!activeItem||locked)return;
+if(!active||locked)return;
 
-const delta=e.clientY-startY;
-activeItem.style.transform=`translateY(${delta}px) scale(1.05)`;
+const dy=e.clientY-startY;
+active.style.transform=`translateY(${dy}px) scale(1.05)`;
 
-const siblings=[...document.querySelectorAll(".rank-item:not(.active)")];
+const others=[...list.children].filter(x=>x!==active);
 
-for(let sib of siblings){
-const box=sib.getBoundingClientRect();
-const mid=box.top+box.height/2;
-
-if(e.clientY<mid){
-sib.parentNode.insertBefore(activeItem,sib);
+for(let o of others){
+const box=o.getBoundingClientRect();
+if(e.clientY<box.top+box.height/2){
+list.insertBefore(active,o);
 break;
-}
-
-if(sib===siblings[siblings.length-1]){
-sib.parentNode.appendChild(activeItem);
 }
 }
 });
 
 list.addEventListener("pointerup",e=>{
-if(!activeItem)return;
-
-activeItem.classList.remove("active");
-activeItem.style.transform="";
-activeItem.releasePointerCapture(e.pointerId);
-activeItem=null;
+if(!active)return;
+active.classList.remove("active");
+active.style.transform="";
+active.releasePointerCapture(e.pointerId);
+active=null;
 });
 
 /* ---------- RENDER ---------- */
 
-function renderList(opts){
+function render(opts){
 list.innerHTML="";
 opts.sort(()=>Math.random()-.5).forEach(t=>{
-const li=document.createElement("div");
-li.className="rank-item fade-in";
-li.innerText=t;
-list.appendChild(li);
+const d=document.createElement("div");
+d.className="rank-item fade-in";
+d.innerText=t;
+list.appendChild(d);
 });
-}
-
-/* ---------- UI HELPERS ---------- */
-
-function show(id){
-document.querySelectorAll(".container>div")
-.forEach(d=>d.classList.add("hidden"));
-
-const el=document.getElementById(id);
-el.classList.remove("hidden");
-el.classList.add("fade-in");
-}
-
-function updateStatus(text){
-document.getElementById("connection-status").innerText=text;
 }
 </script>
 
