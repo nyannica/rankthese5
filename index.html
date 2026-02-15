@@ -1,367 +1,132 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>RANK 5</title>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <style>
-        :root { --p1:#6366f1; --p2:#ec4899; --bg:#0f172a; --card:#1e293b; --text:#f8fafc; --success:#22c55e; --near:#eab308; --skip:#64748b; }
-        body { margin:0; font-family:system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--text); display:flex; justify-content:center; align-items:center; min-height:100vh; padding:1rem; overflow:hidden; touch-action: none; }
-        .container { max-width:480px; width:100%; background:var(--card); padding:1.5rem; border-radius:24px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,0.3); max-height:95vh; overflow-y:auto; position: relative; }
-        .hidden { display:none !important; }
-        button { width:100%; padding:1.1rem; border:none; border-radius:12px; font-weight:bold; cursor:pointer; margin-top:8px; transition:0.2s; font-size:1rem; color:white; }
-        button:disabled { opacity: 0.6; cursor: not-allowed; }
-        .btn-main { background:var(--p1); }
-        .btn-alt { background:var(--p2); }
-        .btn-outline { background:#334155; border:1px solid #475569; }
-        .btn-skip { background:var(--skip); margin-top: 12px; font-size: 0.8rem; padding: 0.6rem; opacity: 0.8; }
-        input, select { width:100%; padding:12px; margin-bottom:10px; border-radius:10px; background:#111827; color:white; border:1px solid #334155; box-sizing:border-box; font-size:1rem; }
-        #rank-list { position:relative; margin:1.2rem 0; display:flex; flex-direction:column; gap:8px; }
-        
-        /* MOBILE DRAG FIX: touch-action: none prevents the page from scrolling while dragging */
-        .rank-item { 
-            background:#334155; 
-            padding:14px; 
-            border-radius:12px; 
-            cursor:grab; 
-            text-align:left; 
-            user-select:none; 
-            display:flex; 
-            align-items:center; 
-            border:1px solid rgba(255,255,255,0.05); 
-            font-size:0.9rem;
-            touch-action: none; 
-            position: relative;
-        }
-        
-        .rank-item::before { content:"☰"; margin-right:12px; opacity:0.3; }
-        .rank-item.active { background:var(--p1); transform: scale(1.02); z-index: 10; box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
-        .rank-preview { opacity: 0.4; cursor: default; pointer-events: none; border: 1px dashed #475569; }
-        #live-points { background: rgba(0,0,0,0.4); padding: 10px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-around; font-weight: bold; border: 1px solid #475569; font-size: 0.8rem; }
-        .result-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
-        #steal-timer { font-size: 0.7rem; margin-top: 5px; color: var(--p2); font-weight: bold; }
-        .winner-banner { font-size: 2rem; margin: 20px 0; color: var(--near); text-shadow: 0 0 10px rgba(234, 179, 8, 0.3); }
-    </style>
-</head>
-<body>
+<style>
+    :root { 
+        /* Valentine's Color Palette */
+        --p1: #e11d48;    /* Deep Rose Red */
+        --p2: #fb7185;    /* Soft Pink */
+        --bg: #fff1f2;    /* Very Light Blush Background */
+        --card: #ffffff;  /* White Card */
+        --text: #4c0519;  /* Dark Wine Text */
+        --success: #be123c; /* Crimson for Success */
+        --near: #f43f5e;  /* Rose for Near-matches */
+        --skip: #fda4af;  /* Light Rose for Skip */
+    }
 
-<div class="container">
-    <div id="status" style="font-size:0.6rem; color:var(--near); margin-bottom:5px; text-transform:uppercase;">Initializing...</div>
+    body { 
+        margin:0; 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        background: var(--bg); 
+        /* Added a subtle heart pattern or gradient for the theme */
+        background-image: radial-gradient(#fecdd3 1px, transparent 1px);
+        background-size: 20px 20px;
+        color: var(--text); 
+        display: flex; 
+        justify-content: center; 
+        align-items: center; 
+        min-height: 100vh; 
+        padding: 1rem; 
+        overflow: hidden; 
+        touch-action: none; 
+    }
+
+    .container { 
+        max-width: 480px; 
+        width: 100%; 
+        background: var(--card); 
+        padding: 1.5rem; 
+        border-radius: 30px; /* Softer, rounder corners */
+        text-align: center; 
+        box-shadow: 0 10px 30px rgba(225, 29, 72, 0.15); /* Pink-tinted shadow */
+        max-height: 95vh; 
+        overflow-y: auto; 
+        position: relative; 
+        border: 2px solid #fecdd3;
+    }
+
+    .hidden { display:none !important; }
+
+    button { 
+        width: 100%; 
+        padding: 1.1rem; 
+        border: none; 
+        border-radius: 15px; 
+        font-weight: bold; 
+        cursor: pointer; 
+        margin-top: 8px; 
+        transition: 0.3s; 
+        font-size: 1rem; 
+        color: white; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-main { background: var(--p1); }
+    .btn-alt { background: var(--p2); }
+    .btn-outline { background: #fff; border: 2px solid var(--p2); color: var(--p2); }
+    .btn-skip { background: var(--skip); margin-top: 12px; font-size: 0.8rem; padding: 0.6rem; opacity: 0.9; color: var(--text); }
+
+    input, select { 
+        width: 100%; 
+        padding: 12px; 
+        margin-bottom: 10px; 
+        border-radius: 12px; 
+        background: #fff; 
+        color: var(--text); 
+        border: 2px solid #fecdd3; 
+        box-sizing: border-box; 
+        font-size: 1rem; 
+    }
+
+    #rank-list { position: relative; margin: 1.2rem 0; display: flex; flex-direction: column; gap: 10px; }
+
+    .rank-item { 
+        background: #fff; 
+        color: var(--text);
+        padding: 14px; 
+        border-radius: 15px; 
+        cursor: grab; 
+        text-align: left; 
+        user-select: none; 
+        display: flex; 
+        align-items: center; 
+        border: 2px solid #ffe4e6; 
+        font-size: 0.95rem;
+        touch-action: none; 
+    }
+
+    .rank-item::before { content: "❤"; margin-right: 12px; color: var(--p2); opacity: 0.6; }
     
-    <div id="live-points" class="hidden">
-        <span id="p-host-score" style="color:var(--p1)">Host: 0</span>
-        <span id="p-guest-score" style="color:var(--p2)">Guest: 0</span>
-    </div>
-
-    <div id="screen-start">
-        <h1>RANK 5</h1>
-        <select id="mode-select">
-            <option value="gaming">Video Games 🎮</option>
-            <option value="travel">Travel & Adventure ✈️</option>
-            <option value="career">Career & Ambition 💼</option>
-            <option value="romance">Romance 💖</option>
-            <option value="personal">Personal Traits 🧠</option>
-            <option value="chaos">🔥 CHAOS MODE</option>
-        </select>
-        <select id="round-select">
-            <option value="5">Blitz (5 Rounds)</option>
-            <option value="10" selected>Standard (10 Rounds)</option>
-            <option value="20">Marathon (20 Rounds)</option>
-        </select>
-        <button id="host-btn" class="btn-main" onclick="startHost()" disabled>Loading Bank...</button>
-        <input id="join-id" placeholder="Partner Code" type="tel" style="margin-top:15px;">
-        <button class="btn-outline" onclick="startJoin()">Join Game</button>
-    </div>
-
-    <div id="screen-wait" class="hidden">
-        <p>Room Code</p>
-        <h1 id="room-id" style="font-size:3.5rem; color:var(--p1); margin:10px 0;">----</h1>
-    </div>
-
-    <div id="screen-game" class="hidden">
-        <div id="role-tag" style="font-size:0.7rem; font-weight:900; letter-spacing:1px; margin-bottom:5px;"></div>
-        <h2 id="question" style="font-size:1.1rem; margin:10px 0;"></h2>
-        <div id="rank-list"></div>
-        <button id="submit" class="btn-main" onclick="sendOrder()">Lock My Order</button>
-        <button id="skip-btn" class="btn-skip" onclick="requestSkip()">Skip Question ⏭️</button>
-        <p id="round-info" style="font-size:0.7rem; color:#64748b; margin-top:10px;"></p>
-    </div>
-
-    <div id="screen-results" class="hidden">
-        <h2 id="res-title">Round Result</h2>
-        <div id="result-list" style="margin: 15px 0;"></div>
-        <div id="controls"></div>
-        <div id="steal-timer"></div>
-    </div>
-
-    <div id="screen-final" class="hidden">
-        <h1>Game Over!</h1>
-        <div class="winner-banner" id="winner-text"></div>
-        <div id="final-stats" style="margin-bottom: 20px;"></div>
-        <button class="btn-main" onclick="location.reload()">Play Again</button>
-    </div>
-</div>
-
-<script>
-let bank = null; 
-let peer, conn, role, idx=0, max=10, mode="gaming", truth=null, locked=false;
-let scores = { host: 0, guest: 0 }, deck = [], currentDesigner="host";
-let stealInterval;
-
-async function initGame() {
-    try {
-        const response = await fetch('questions.json');
-        bank = await response.json();
-        document.getElementById("status").innerText = "System Ready";
-        const hBtn = document.getElementById("host-btn");
-        hBtn.disabled = false;
-        hBtn.innerText = "Host Versus Match";
-    } catch (e) {
-        document.getElementById("status").innerText = "Error Loading Questions";
-        console.error("Could not load questions.json", e);
-    }
-}
-
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
-
-function show(id) { 
-    document.querySelectorAll(".container > div:not(#status):not(#live-points)").forEach(d => d.classList.add("hidden")); 
-    document.getElementById(id).classList.remove("hidden"); 
-}
-
-function startHost() {
-    if(!bank) return;
-    mode = document.getElementById("mode-select").value;
-    max = parseInt(document.getElementById("round-select").value);
-    let pool = (mode === 'chaos') ? [].concat(...Object.values(bank)) : [...bank[mode]];
-    deck = shuffle(pool).slice(0, max);
-    peer = new Peer(Math.floor(1000 + Math.random() * 9000) + ""); role = "host";
-    peer.on("open", id => { document.getElementById("room-id").innerText = id; show("screen-wait"); });
-    peer.on("connection", c => { conn = c; setup(); });
-}
-
-function startJoin() {
-    peer = new Peer(); role = "guest";
-    peer.on("open", () => { 
-        const id = document.getElementById("join-id").value;
-        if(!id) return alert("Enter a code!");
-        conn = peer.connect(id); setup(); 
-    });
-}
-
-function setup() {
-    conn.on("open", () => { 
-        document.getElementById("status").innerText = "Connection Live";
-        document.getElementById("live-points").classList.remove("hidden");
-        if(role === "guest") conn.send({ type: "READY" }); 
-    });
-    conn.on("data", d => {
-        if(d.type === "READY" && role === "host") { conn.send({ type: "START", mode, max, deck }); round(); }
-        if(d.type === "START") { mode = d.mode; max = d.max; deck = d.deck; round(); }
-        if(d.type === "TRUTH") { truth = d.order; ui(); render(deck[idx].opts, false); }
-        if(d.type === "GUESS") { reveal(truth, d.order); }
-        if(d.type === "NEXT") { idx = d.i; (idx >= max) ? showFinalScore() : round(); }
-        if(d.type === "SYNC_SCORE") { scores = d.scores; updatePoints(); }
-        if(d.type === "STEAL") { 
-            clearInterval(stealInterval);
-            currentDesigner = (role === "host") ? "guest" : "host"; 
-            replay(); 
-        }
-        if(d.type === "SKIP") { handleSkip(); }
-    });
-}
-
-function updatePoints() {
-    document.getElementById("p-host-score").innerText = `Host: ${scores.host}`;
-    document.getElementById("p-guest-score").innerText = `Guest: ${scores.guest}`;
-}
-
-function round() {
-    truth = null; locked = false;
-    currentDesigner = (idx % 2 === 0) ? "host" : "guest";
-    replay();
-}
-
-function replay() {
-    locked = false; 
-    const btn = document.getElementById("submit");
-    btn.disabled = false;
-    btn.innerText = "Lock My Order";
-    btn.classList.remove("hidden");
-
-    document.getElementById("question").innerText = deck[idx].q;
-    document.getElementById("round-info").innerText = `Round ${idx + 1} of ${max}`;
-    const isGuesserWaiting = (role !== currentDesigner && !truth);
-    render(deck[idx].opts, isGuesserWaiting);
-    ui(); show("screen-game");
-}
-
-function ui() {
-    const isCr = (role === currentDesigner);
-    const tag = document.getElementById("role-tag");
-    tag.innerText = isCr ? "⭐ SET YOUR TRUTH" : (truth ? "🔍 GUESS THEIR TRUTH" : "⌛ PREVIEWING OPTIONS...");
-    tag.style.color = isCr ? "var(--p2)" : "var(--p1)";
-    document.getElementById("submit").classList.toggle("hidden", !isCr && !truth);
-    document.getElementById("skip-btn").classList.toggle("hidden", !isCr && !truth);
-}
-
-function render(opts, isPreview) {
-    const rl = document.getElementById("rank-list"); rl.innerHTML = "";
-    opts.forEach(t => {
-        const d = document.createElement("div");
-        d.className = "rank-item" + (isPreview ? " rank-preview" : "");
-        d.innerText = t;
-        rl.appendChild(d);
-    });
-}
-
-function requestSkip() {
-    if(confirm("Skip this question? No points awarded.")) {
-        conn.send({ type: "SKIP" });
-        handleSkip();
-    }
-}
-
-function handleSkip() {
-    if(role === "host") {
-        idx++;
-        conn.send({type: "NEXT", i: idx});
-        (idx >= max) ? showFinalScore() : round();
-    } else {
-        document.getElementById("status").innerText = "Skipping...";
-    }
-}
-
-function sendOrder() {
-    const btn = document.getElementById("submit");
-    btn.innerText = "Entry Submitted! ✓";
-    btn.disabled = true;
-    const order = [...document.querySelectorAll(".rank-item")].map(x => x.innerText);
-    locked = true; 
-    if(!truth) { 
-        truth = order; 
-        conn.send({ type: "TRUTH", order }); 
-    }
-    else { 
-        conn.send({ type: "GUESS", order }); 
-        reveal(truth, order); 
-    }
-}
-
-function reveal(t, g) {
-    clearInterval(stealInterval);
-    const list = document.getElementById("result-list"); list.innerHTML = ""; 
-    let pts = 0;
-    t.forEach((x, i) => {
-        const actualPos = g.indexOf(x); const diff = Math.abs(i - actualPos);
-        if(diff === 0) pts += 2; else if(diff === 1) pts += 1;
-        let div = document.createElement("div"); div.className = "result-row";
-        div.innerHTML = `<span>${x}</span><span style="color:${diff===0?'var(--success)':'var(--text)'}">Rank #${actualPos+1}</span>`;
-        list.appendChild(div);
-    });
-    
-    if(role === "host") { 
-        scores[(currentDesigner==='host'?'guest':'host')] += pts; 
-        conn.send({ type: "SYNC_SCORE", scores }); 
-        updatePoints(); 
-    }
-    
-    const ctrl = document.getElementById("controls"); ctrl.innerHTML = "";
-    const timerDisplay = document.getElementById("steal-timer");
-    timerDisplay.innerText = "";
-
-    if(role !== currentDesigner) {
-        let timeLeft = 5;
-        let b = document.createElement("button"); 
-        b.className="btn-alt"; b.id="btn-steal-action";
-        b.innerText=`🔄 Steal Turn (${timeLeft}s)`;
-        b.onclick = () => { conn.send({type:"STEAL"}); currentDesigner=role; replay(); };
-        ctrl.appendChild(b);
-
-        stealInterval = setInterval(() => {
-            timeLeft--;
-            if(timeLeft > 0) b.innerText = `🔄 Steal Turn (${timeLeft}s)`;
-            else { b.disabled = true; b.innerText = "Time Expired"; clearInterval(stealInterval); }
-        }, 1000);
+    .rank-item.active { 
+        background: #fff1f2; 
+        border-color: var(--p1); 
+        transform: scale(1.03); 
+        z-index: 10; 
+        box-shadow: 0 5px 15px rgba(225, 29, 72, 0.2); 
     }
 
-    if(role === "host") {
-        let bNext = document.createElement("button"); 
-        bNext.className="btn-main"; 
-        bNext.innerText=(idx+1 >= max) ? "See Final Winner" : "Next Round";
-        bNext.onclick = () => { 
-            clearInterval(stealInterval);
-            idx++; 
-            conn.send({type:"NEXT", i:idx}); 
-            (idx >= max) ? showFinalScore() : round(); 
-        };
-        ctrl.appendChild(bNext);
+    .rank-preview { opacity: 0.5; cursor: default; pointer-events: none; border: 2px dashed #fda4af; }
+
+    #live-points { 
+        background: #fff; 
+        padding: 12px; 
+        border-radius: 20px; 
+        margin-bottom: 15px; 
+        display: flex; 
+        justify-content: space-around; 
+        font-weight: bold; 
+        border: 2px solid #fecdd3; 
+        font-size: 0.85rem; 
     }
-    show("screen-results");
-}
 
-function showFinalScore() {
-    const winnerText = document.getElementById("winner-text");
-    const stats = document.getElementById("final-stats");
-    
-    let winner = "";
-    if(scores.host > scores.guest) winner = "HOST WINS! 🏆";
-    else if(scores.guest > scores.host) winner = "GUEST WINS! 🏆";
-    else winner = "IT'S A TIE! 🤝";
-    
-    winnerText.innerText = winner;
-    stats.innerHTML = `<p>Host: ${scores.host} pts</p><p>Guest: ${scores.guest} pts</p>`;
-    
-    document.getElementById("live-points").classList.add("hidden");
-    show("screen-final");
-}
-
-// DRAG AND DROP LOGIC
-let active = null;
-document.addEventListener("pointerdown", e => { 
-    // Check if we clicked/touched a rank item that isn't locked or a preview
-    const item = e.target.closest(".rank-item");
-    if(item && !item.classList.contains("rank-preview") && !locked) { 
-        active = item; 
-        active.classList.add("active"); 
-        // For mobile: setPointerCapture allows tracking movement even if the finger leaves the element
-        active.setPointerCapture(e.pointerId);
-    } 
-});
-
-document.addEventListener("pointermove", e => {
-    if(!active) return;
-    
-    // Find what is currently under the finger/mouse
-    let target = document.elementFromPoint(e.clientX, e.clientY);
-    if(target) {
-        let itemUnder = target.closest(".rank-item");
-        // Swap positions if moving over another list item
-        if(itemUnder && itemUnder !== active && !itemUnder.classList.contains("rank-preview")) {
-            let rect = itemUnder.getBoundingClientRect();
-            let next = (e.clientY > rect.top + rect.height / 2);
-            if(next) itemUnder.after(active);
-            else itemUnder.before(active);
-        }
+    .result-row { 
+        display: flex; 
+        justify-content: space-between; 
+        padding: 12px; 
+        border-bottom: 1px solid #ffe4e6; 
+        font-size: 0.9rem; 
     }
-});
 
-document.addEventListener("pointerup", e => { 
-    if(active) {
-        active.releasePointerCapture(e.pointerId);
-        active.classList.remove("active"); 
-        active = null; 
-    }
-});
-
-initGame();
-</script>
-</body>
-</html>
+    #steal-timer { font-size: 0.75rem; margin-top: 5px; color: var(--p1); font-weight: bold; }
+    .winner-banner { font-size: 2.2rem; margin: 20px 0; color: var(--p1); text-shadow: 0 0 5px rgba(225, 29, 72, 0.1); }
+</style>
