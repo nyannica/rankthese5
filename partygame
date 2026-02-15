@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peer Ranker - No Setup Required</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+
+    <style>
+        :root { --p1: #6366f1; --p2: #ec4899; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 1rem; min-height: 100vh; margin: 0; }
+        .container { max-width: 400px; width: 100%; background: var(--card); padding: 2rem; border-radius: 28px; text-align: center; align-self: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        
+        .code-box { background: #0f172a; padding: 1.5rem; border-radius: 18px; margin: 1rem 0; border: 1px dashed #475569; }
+        .code-text { font-size: 2rem; font-weight: 800; letter-spacing: 4px; color: var(--p1); }
+        
+        #rank-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+        .rank-item { background: #334155; margin-bottom: 10px; padding: 1rem; border-radius: 14px; cursor: grab; display: flex; align-items: center; text-align: left; }
+        .rank-item.dragging { opacity: 0.4; }
+        
+        button { width: 100%; padding: 1.1rem; border-radius: 14px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; }
+        .btn-main { background: var(--p1); color: white; }
+        .btn-join { background: #334155; color: white; }
+        input { width: 80%; padding: 12px; border-radius: 10px; border: 2px solid #334155; background: #0f172a; color: white; text-align: center; margin-bottom: 10px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="screen-start">
+        <h1>DuoRanker</h1>
+        <p style="color: #94a3b8">No setup. Just play.</p>
+        <button class="btn-main" onclick="startHost()">Host a Game</button>
+        <div style="margin: 20px 0; color: #475569;">— OR —</div>
+        <input type="text" id="join-id" placeholder="Enter Friend's Code">
+        <button class="btn-join" onclick="startJoin()">Join Friend</button>
+    </div>
+
+    <div id="screen-waiting" class="hidden">
+        <h3>Your Code:</h3>
+        <div class="code-box">
+            <div class="code-text" id="my-id-display">...</div>
+        </div>
+        <p>Waiting for friend to connect...</p>
+    </div>
+
+    <div id="screen-game" class="hidden">
+        <h3 id="question-text">...</h3>
+        <p id="turn-msg" style="font-size: 0.8rem; color: var(--p1);"></p>
+        <div id="rank-list"></div>
+        <button id="submit-btn" class="btn-main" onclick="sendOrder()">Lock Order</button>
+    </div>
+
+    <div id="screen-results" class="hidden">
+        <h2>Results</h2>
+        <div id="score-display" style="font-size: 3rem; font-weight: bold; margin: 1rem 0;">0%</div>
+        <p id="match-info"></p>
+        <button class="btn-main" onclick="nextRound()">Next Question</button>
+    </div>
+</div>
+
+<script>
+    let peer;
+    let conn;
+    let myRole = ""; // 'host' or 'guest'
+    let truth = null;
+    let currentQIdx = 0;
+
+    const questions = [
+        { q: "Best Pizza Topping?", opts: ["Pepperoni", "Pineapple", "Mushrooms", "Extra Cheese", "Sausage"] },
+        { q: "Dream Superpower?", opts: ["Flight", "Teleportation", "Invisibility", "Time Travel", "Mind Reading"] }
+    ];
+
+    // --- CONNECTION LOGIC ---
+
+    function startHost() {
+        const randomId = Math.floor(1000 + Math.random() * 9000).toString();
+        peer = new Peer(randomId); 
+        myRole = "host";
+
+        peer.on('open', (id) => {
+            document.getElementById('my-id-display').innerText = id;
+            showScreen('screen-waiting');
+        });
+
+        peer.on('connection', (connection) => {
+            conn = connection;
+            setupConnHandlers();
+        });
+    }
+
+    function startJoin() {
+        const targetId = document.getElementById('join-id').value;
+        peer = new Peer();
+        myRole = "guest";
+
+        peer.on('open', () => {
+            conn = peer.connect(targetId);
+            setupConnHandlers();
+        });
+    }
+
+    function setupConnHandlers() {
+        conn.on('open', () => {
+            showScreen('screen-game');
+            startRound();
+        });
+
+        conn.on('data', (data) => {
+            if (data.type === 'TRUTH') {
+                truth = data.order;
+                updateTurn();
+            } else if (data.type === 'GUESS') {
+                showResults(data.order);
+            } else if (data.type === 'NEXT') {
+                currentQIdx++;
+                startRound();
+            }
+        });
+    }
+
+    // --- GAME LOGIC ---
+
+    function startRound() {
+        showScreen('screen-game');
+        truth = null;
+        const q = questions[currentQIdx % questions.length];
+        document.getElementById('question-text').innerText = q.q;
+        renderList(q.opts);
+        updateTurn();
+    }
+
+    function updateTurn() {
+        const isHostRound = (currentQIdx % 2 === 0);
+        const submitBtn = document.getElementById('submit-btn');
+        const msg = document.getElementById('turn-msg');
+
+        // Logic: Round 1 (Even) Host sets truth. Round 2 (Odd) Guest sets truth.
+        const iAmSetting = (isHostRound && myRole === 'host') || (!isHostRound && myRole === 'guest');
+
+        if (iAmSetting) {
+            msg.innerText = "YOUR TURN: Set your preferences!";
+            submitBtn.classList.remove('hidden');
+        } else if (!truth) {
+            msg.innerText = "Waiting for friend to set the order...";
+            submitBtn.classList.add('hidden');
+        } else {
+            msg.innerText = "YOUR TURN: Guess their order!";
+            submitBtn.classList.remove('hidden');
+        }
+    }
+
+    function renderList(opts) {
+        const list = document.getElementById('rank-list');
+        list.innerHTML = "";
+        [...opts].sort(() => Math.random() - 0.5).forEach(text => {
+            const li = document.createElement('li');
+            li.className = 'rank-item';
+            li.draggable = true;
+            li.innerText = text;
+            li.addEventListener('dragstart', () => li.classList.add('dragging'));
+            li.addEventListener('dragend', () => li.classList.remove('dragging'));
+            list.appendChild(li);
+        });
+    }
+
+    // Drag support
+    document.getElementById('rank-list').addEventListener('dragover', e => {
+        e.preventDefault();
+        const dragging = document.querySelector('.dragging');
+        const list = document.getElementById('rank-list');
+        const afterElement = [...list.querySelectorAll('.rank-item:not(.dragging)')].find(el => {
+            return e.clientY <= el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2;
+        });
+        if (afterElement) list.insertBefore(dragging, afterElement);
+        else list.appendChild(dragging);
+    });
+
+    function sendOrder() {
+        const order = [...document.querySelectorAll('.rank-item')].map(li => li.innerText);
+        if (!truth) {
+            conn.send({ type: 'TRUTH', order: order });
+            truth = order; // Locally mark as truth set
+            updateTurn();
+        } else {
+            conn.send({ type: 'GUESS', order: order });
+            showResults(order);
+        }
+    }
+
+    function showResults(guessOrder) {
+        showScreen('screen-results');
+        let pts = 0;
+        guessOrder.forEach((item, i) => {
+            const dist = Math.abs(i - truth.indexOf(item));
+            if (dist === 0) pts += 2; else if (dist === 1) pts += 1;
+        });
+        const score = Math.round((pts / (truth.length * 2)) * 100);
+        document.getElementById('score-display').innerText = score + "%";
+        document.getElementById('match-info').innerText = `Truth: ${truth[0]} | Guess: ${guessOrder[0]}`;
+    }
+
+    function nextRound() {
+        currentQIdx++;
+        conn.send({ type: 'NEXT' });
+        startRound();
+    }
+
+    function showScreen(id) {
+        ['screen-start', 'screen-waiting', 'screen-game', 'screen-results'].forEach(s => {
+            document.getElementById(s).classList.add('hidden');
+        });
+        document.getElementById(id).classList.remove('hidden');
+    }
+</script>
+</body>
+</html>
