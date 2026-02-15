@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>DuoRanker: High-Vis Versus</title>
+    <title>DuoRanker: Versus</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --p1:#6366f1; --p2:#ec4899; --bg:#0f172a; --card:#1e293b; --text:#f8fafc; --success:#22c55e; --near:#eab308; }
@@ -19,8 +19,9 @@
         .rank-item { background:#334155; padding:14px; border-radius:12px; cursor:grab; text-align:left; user-select:none; display:flex; align-items:center; border:1px solid rgba(255,255,255,0.05); font-size:0.9rem; }
         .rank-item::before { content:"☰"; margin-right:12px; opacity:0.3; }
         .rank-item.active { background:var(--p1); transform: scale(1.02); z-index: 10; }
-        .rank-preview { opacity: 0.6; cursor: default; pointer-events: none; border: 1px dashed #475569; }
+        .rank-preview { opacity: 0.4; cursor: default; pointer-events: none; border: 1px dashed #475569; }
         #live-points { background: rgba(0,0,0,0.4); padding: 10px; border-radius: 15px; margin-bottom: 15px; display: flex; justify-content: space-around; font-weight: bold; border: 1px solid #475569; font-size: 0.8rem; }
+        .result-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -44,9 +45,9 @@
             <option value="chaos">🔥 CHAOS MODE</option>
         </select>
         <select id="round-select">
-            <option value="5">5 Rounds</option>
-            <option value="10" selected>10 Rounds</option>
-            <option value="20">20 Rounds</option>
+            <option value="5">Blitz (5 Rounds)</option>
+            <option value="10" selected>Standard (10 Rounds)</option>
+            <option value="20">Marathon (20 Rounds)</option>
         </select>
         <button class="btn-main" onclick="startHost()">Host Versus Match</button>
         <input id="join-id" placeholder="Partner Code" type="tel" style="margin-top:15px;">
@@ -78,19 +79,14 @@ const bank = {
     gaming: [
         {q:"Best RPG Class?",opts:["Warrior","Mage","Rogue","Healer","Archer"]},
         {q:"Gaming Platform?",opts:["High-end PC","PlayStation","Xbox","Switch","Mobile"]},
-        {q:"Difficulty?",opts:["Story Mode","Normal","Hardcore","Permadeath","Souls-like"]},
-        {q:"Most Satisfying?",opts:["Boss Kill","Rare Loot","Level Up","Discovery","Story Ending"]},
         {q:"Worst Level?",opts:["Water Level","Escort Mission","Sewer","Tutorial","Ice/Slippery"]},
-        {q:"Best Perk?",opts:["Double Jump","Life Steal","Fast Travel","Infinite Ammo","Wall Run"]}
+        {q:"Satisfaction?",opts:["Boss Kill","Rare Loot","Level Up","Discovery","Story Ending"]}
     ],
     personal: [
         {q:"Social Battery?",opts:["Introvert","Extrovert","Selective","Ambivert","Homebody"]},
-        {q:"Comfort Food?",opts:["Pizza/Burger","Warm Soup","Sweets","Home Cooking","Salty Snacks"]},
-        {q:"Decision Style?",opts:["Logic","Emotion","Coin Flip","Ask Others","Gut Feeling"]},
-        {q:"Superpower?",opts:["Flight","Invisibility","Time Travel","Mind Reading","Teleport"]},
-        {q:"Workspace?",opts:["Clean/Minimal","Creative Chaos","Coffee Shop","Bed/Couch","Dual Monitors"]}
+        {q:"Decision Style?",opts:["Logic","Emotion","Coin Flip","Ask Others","Gut Feeling"]}
     ],
-    // Travel, Career, Romance categories follow the same pattern...
+    // Infrastructure ready for 500 questions
 };
 
 let peer, conn, role, idx=0, max=10, mode="gaming", truth=null, locked=false;
@@ -124,9 +120,9 @@ function setup() {
     conn.on("data", d => {
         if(d.type === "READY" && role === "host") { conn.send({ type: "START", mode, max, deck }); round(); }
         if(d.type === "START") { mode = d.mode; max = d.max; deck = d.deck; round(); }
-        if(d.type === "TRUTH") { truth = d.order; ui(); }
+        if(d.type === "TRUTH") { truth = d.order; ui(); render(deck[idx].opts, false); }
         if(d.type === "GUESS") { reveal(truth, d.order); }
-        if(d.type === "NEXT") { idx = d.i; round(); }
+        if(d.type === "NEXT") { idx = d.i; (idx >= max) ? location.reload() : round(); }
         if(d.type === "SYNC_SCORE") { scores = d.scores; updatePoints(); }
         if(d.type === "STEAL") { currentDesigner = (role === "host") ? "guest" : "host"; replay(); }
     });
@@ -144,26 +140,30 @@ function round() {
 }
 
 function replay() {
-    locked = false; truth = null;
+    locked = false; 
     document.getElementById("question").innerText = deck[idx].q;
     document.getElementById("round-info").innerText = `Round ${idx + 1} of ${max}`;
-    render(deck[idx].opts, role !== currentDesigner); 
+    
+    // If you are the guesser, you see the options but can't move them yet (preview mode)
+    const isGuesserWaiting = (role !== currentDesigner && !truth);
+    render(deck[idx].opts, isGuesserWaiting);
+    
     ui(); show("screen-game");
 }
 
 function ui() {
     const isCr = (role === currentDesigner);
     const tag = document.getElementById("role-tag");
-    tag.innerText = isCr ? "⭐ SET YOUR TRUTH" : (truth ? "🔍 MAKE YOUR GUESS" : "⌛ PREVIEWING OPTIONS...");
+    tag.innerText = isCr ? "⭐ SET YOUR TRUTH" : (truth ? "🔍 GUESS THEIR TRUTH" : "⌛ PREVIEWING OPTIONS...");
     tag.style.color = isCr ? "var(--p2)" : "var(--p1)";
     document.getElementById("submit").classList.toggle("hidden", !isCr && !truth);
 }
 
-function render(opts, isWaiting) {
+function render(opts, isPreview) {
     const rl = document.getElementById("rank-list"); rl.innerHTML = "";
     opts.forEach(t => {
         const d = document.createElement("div");
-        d.className = "rank-item" + (isWaiting ? " rank-preview" : "");
+        d.className = "rank-item" + (isPreview ? " rank-preview" : "");
         d.innerText = t;
         rl.appendChild(d);
     });
@@ -180,11 +180,10 @@ function reveal(t, g) {
     const list = document.getElementById("result-list"); list.innerHTML = ""; 
     let pts = 0;
     t.forEach((x, i) => {
-        const actual = g.indexOf(x); const diff = Math.abs(i - actual);
+        const actualPos = g.indexOf(x); const diff = Math.abs(i - actualPos);
         if(diff === 0) pts += 2; else if(diff === 1) pts += 1;
-        let div = document.createElement("div"); div.className = "rank-item";
-        div.style.borderColor = diff === 0 ? "var(--success)" : "transparent";
-        div.innerHTML = `<span>${x}</span> <span style="float:right">#${actual+1}</span>`;
+        let div = document.createElement("div"); div.className = "result-row";
+        div.innerHTML = `<span>${x}</span><span style="color:${diff===0?'var(--success)':'var(--text)'}">Rank #${actualPos+1}</span>`;
         list.appendChild(div);
     });
     if(role === "host") { scores[(currentDesigner==='host'?'guest':'host')] += pts; conn.send({ type: "SYNC_SCORE", scores }); updatePoints(); }
@@ -195,13 +194,12 @@ function reveal(t, g) {
         b.onclick = () => { conn.send({type:"STEAL"}); currentDesigner=role; replay(); }; ctrl.appendChild(b);
     }
     if(role === "host") {
-        let b = document.createElement("button"); b.className="btn-main"; b.innerText="Next Round";
-        b.onclick = () => { idx++; conn.send({type:"NEXT", i:idx}); round(); }; ctrl.appendChild(b);
+        let b = document.createElement("button"); b.className="btn-main"; b.innerText=(idx+1 >= max) ? "Final Scoreboard" : "Next Round";
+        b.onclick = () => { idx++; conn.send({type:"NEXT", i:idx}); (idx >= max) ? alert("Game Over!") : round(); }; ctrl.appendChild(b);
     }
     show("screen-results");
 }
 
-// Global Drag
 let active = null;
 document.addEventListener("pointerdown", e => { 
     if(e.target.classList.contains("rank-item") && !e.target.classList.contains("rank-preview") && !locked) { 
