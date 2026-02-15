@@ -3,34 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DuoRanker - Full Results</title>
+    <title>DuoRanker - Detailed Results</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --p1: #6366f1; --p2: #ec4899; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --success: #22c55e; --warn: #eab308; }
+        :root { --p1: #6366f1; --p2: #ec4899; --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --success: #22c55e; --near: #eab308; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 1rem; min-height: 100vh; margin: 0; }
-        .container { max-width: 480px; width: 100%; background: var(--card); padding: 2rem; border-radius: 28px; text-align: center; align-self: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        .container { max-width: 480px; width: 100%; background: var(--card); padding: 1.5rem; border-radius: 28px; text-align: center; align-self: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
         
-        /* Rank List UI */
-        #rank-list { list-style: none; padding: 0; margin: 1.5rem 0; }
-        .rank-item { background: #334155; margin-bottom: 10px; padding: 1rem; border-radius: 14px; cursor: grab; display: flex; align-items: center; font-size: 0.95rem; border: 2px solid transparent; }
-        .rank-item.dragging { opacity: 0.4; border-color: var(--p1); }
+        /* The Result Card */
+        .comparison-stack { margin-top: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .res-item { display: flex; align-items: center; background: #0f172a; padding: 12px 16px; border-radius: 16px; border-left: 5px solid #475569; transition: 0.3s; }
         
-        /* Result Comparison UI */
-        .results-container { margin-top: 20px; text-align: left; }
-        .result-row { display: grid; grid-template-columns: 1fr 40px 1fr; gap: 10px; align-items: center; margin-bottom: 8px; background: rgba(15, 23, 42, 0.5); padding: 10px; border-radius: 12px; border-left: 4px solid #475569; }
-        .result-row.perfect { border-left-color: var(--success); background: rgba(34, 197, 94, 0.1); }
-        .result-row.near { border-left-color: var(--warn); }
-        
-        .res-label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; display: block; }
-        .res-val { font-size: 0.85rem; font-weight: 500; }
-        .res-arrow { text-align: center; color: #475569; font-weight: bold; }
+        /* Status Colors */
+        .res-item.perfect { border-left-color: var(--success); background: rgba(34, 197, 94, 0.1); }
+        .res-item.close { border-left-color: var(--near); background: rgba(234, 179, 8, 0.1); }
 
-        /* Buttons */
-        button { width: 100%; padding: 1.1rem; border-radius: 14px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; transition: 0.2s; }
+        .res-rank { font-weight: 800; font-size: 1.2rem; min-width: 30px; color: #94a3b8; }
+        .res-content { flex-grow: 1; text-align: left; padding: 0 15px; }
+        .res-name { font-weight: 600; display: block; font-size: 0.95rem; }
+        .res-sub { font-size: 0.75rem; color: #64748b; }
+        
+        .res-diff { font-size: 0.75rem; font-weight: bold; background: #334155; padding: 4px 8px; border-radius: 8px; }
+        .perfect .res-diff { background: var(--success); color: white; }
+
+        /* General UI */
+        #rank-list { list-style: none; padding: 0; margin: 1.5rem 0; }
+        .rank-item { background: #334155; margin-bottom: 10px; padding: 1rem; border-radius: 14px; cursor: grab; display: flex; align-items: center; border: 2px solid transparent; }
+        .rank-item.dragging { opacity: 0.4; border-color: var(--p1); }
+        button { width: 100%; padding: 1.1rem; border-radius: 14px; border: none; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; }
         .btn-main { background: var(--p1); color: white; }
-        .btn-locked { background: var(--success) !important; color: white; cursor: default; }
         .hidden { display: none; }
-        .badge { background: var(--p2); padding: 4px 10px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; margin-bottom: 10px; display: inline-block; }
     </style>
 </head>
 <body>
@@ -38,198 +40,141 @@
 <div class="container">
     <div id="screen-start">
         <h1>DuoRanker</h1>
-        <p style="color: #94a3b8; font-size: 0.9rem;">The ultimate connection game.</p>
         <button class="btn-main" onclick="startHost()">Host Game</button>
-        <div style="margin: 20px 0; color: #475569;">— OR —</div>
-        <input type="text" id="join-id" placeholder="Enter 4-Digit Code" style="width: 80%; padding: 12px; border-radius: 10px; border: 2px solid #334155; background: #0f172a; color: white; text-align: center; margin-bottom: 10px;">
-        <button style="background: #334155; color: white;" onclick="startJoin()">Join Friend</button>
+        <input type="text" id="join-id" placeholder="Code" style="width: 50%; margin: 10px; padding: 10px; border-radius: 8px; border: none;">
+        <button onclick="startJoin()">Join Game</button>
     </div>
 
     <div id="screen-waiting" class="hidden">
         <h3>Invite Code</h3>
-        <div style="font-size: 3rem; font-weight: 800; color: var(--p1); margin: 1rem 0;" id="my-id-display">----</div>
-        <p>Waiting for friend...</p>
+        <h1 id="my-id-display" style="color: var(--p1); font-size: 3rem;">----</h1>
     </div>
 
     <div id="screen-game" class="hidden">
-        <div id="cat-badge" class="badge">GAME ON</div>
-        <h2 id="question-text" style="margin: 0;">...</h2>
-        <p id="turn-msg" style="font-size: 0.8rem; color: var(--p1); font-weight: bold; margin: 10px 0;"></p>
+        <h2 id="question-text">...</h2>
         <div id="rank-list"></div>
-        <button id="submit-btn" class="btn-main" onclick="sendOrder()">Lock Order</button>
+        <button id="submit-btn" class="btn-main" onclick="sendOrder()">Lock My Ranking</button>
     </div>
 
     <div id="screen-results" class="hidden">
-        <h2 style="margin-bottom: 5px;">Results</h2>
-        <div id="score-display" style="font-size: 3.5rem; font-weight: 900; color: var(--p2);">0%</div>
+        <h3 id="result-header" style="color: #94a3b8; margin: 0;">Match Strength</h3>
+        <div id="score-display" style="font-size: 4rem; font-weight: 900; color: var(--p2); margin-bottom: 10px;">0%</div>
         
-        <div class="results-container" id="results-list">
+        <div class="comparison-stack" id="full-reveal">
             </div>
         
-        <button class="btn-main" onclick="nextRound()">Next Question →</button>
+        <button class="btn-main" onclick="nextRound()" style="margin-top: 20px;">Next Question →</button>
     </div>
 </div>
 
 <script>
-    // 60 questions bank (shortened for display, but keep your full lists)
-    const questionBank = {
-        couple: [
-            { q: "Favorite Date Night?", opts: ["Fancy Dinner", "Movie Night", "Hiking/Nature", "Concert/Event", "Stay Home & Cook"] },
-            { q: "Best Vacation Vibe?", opts: ["Relaxing Beach", "Busy City Trip", "Mountain Cabin", "Theme Parks", "Road Trip"] }
-        ],
-        personal: [
-            { q: "What defines you most?", opts: ["Your Past", "Your Work", "Your Relationships", "Your Dreams", "Your Values"] },
-            { q: "Biggest Motivator?", opts: ["Fear of Failure", "Money", "Helping Others", "Recognition", "Personal Growth"] }
-        ]
-    };
+    // Example Bank
+    const questions = [
+        { q: "Best Pizza Topping?", opts: ["Pepperoni", "Mushrooms", "Extra Cheese", "Pineapple", "Onions"] },
+        { q: "Ideal Superpower?", opts: ["Flight", "Teleportation", "Mind Reading", "Invisibility", "Time Travel"] }
+    ];
 
-    let peer, conn, myRole, truth, currentQIdx = 0, selectedMode = 'couple', lockedIn = false;
+    let peer, conn, myRole, truth, currentIdx = 0, locked = false;
 
-    // --- CONNECTION ---
+    // --- Peer Setup ---
     function startHost() {
-        const rid = Math.floor(1000 + Math.random() * 9000).toString();
-        peer = new Peer(rid); myRole = "host";
-        peer.on('open', (id) => { document.getElementById('my-id-display').innerText = id; showScreen('screen-waiting'); });
-        peer.on('connection', (c) => { conn = c; setupHandlers(); });
+        const id = Math.floor(1000 + Math.random() * 9000).toString();
+        peer = new Peer(id); myRole = 'host';
+        peer.on('open', (i) => { document.getElementById('my-id-display').innerText = i; show('screen-waiting'); });
+        peer.on('connection', (c) => { conn = c; handleConn(); });
     }
-
     function startJoin() {
         const tid = document.getElementById('join-id').value;
-        peer = new Peer(); myRole = "guest";
-        peer.on('open', () => { conn = peer.connect(tid); setupHandlers(); });
+        peer = new Peer(); myRole = 'guest';
+        peer.on('open', () => { conn = peer.connect(tid); handleConn(); });
     }
-
-    function setupHandlers() {
-        conn.on('open', () => { showScreen('screen-game'); startRound(); });
-        conn.on('data', (data) => {
-            if (data.type === 'TRUTH') { truth = data.order; updateTurn(); }
-            if (data.type === 'GUESS') { showDetailedResults(truth, data.order); }
-            if (data.type === 'NEXT') { currentQIdx++; startRound(); }
+    function handleConn() {
+        conn.on('open', () => { show('screen-game'); startRound(); });
+        conn.on('data', (d) => {
+            if(d.type==='TRUTH') { truth = d.order; updateUI(); }
+            if(d.type==='GUESS') { revealAll(truth, d.order); }
+            if(d.type==='NEXT') { currentIdx++; startRound(); }
         });
     }
 
-    // --- GAME LOGIC ---
+    // --- Game Logic ---
     function startRound() {
-        showScreen('screen-game');
-        truth = null; lockedIn = false;
-        const qList = questionBank[selectedMode];
-        const q = qList[currentQIdx % qList.length];
+        show('screen-game'); truth = null; locked = false;
+        const q = questions[currentIdx % questions.length];
         document.getElementById('question-text').innerText = q.q;
-        
-        const btn = document.getElementById('submit-btn');
-        btn.innerText = "Lock My Order"; btn.className = "btn-main";
-        
         renderList(q.opts);
-        updateTurn();
+        updateUI();
     }
 
-    function updateTurn() {
-        const isHostRound = (currentQIdx % 2 === 0);
-        const iAmSetting = (isHostRound && myRole === 'host') || (!isHostRound && myRole === 'guest');
-        const msg = document.getElementById('turn-msg');
+    function updateUI() {
+        const isTurn = (currentIdx % 2 === 0 && myRole === 'host') || (currentIdx % 2 !== 0 && myRole === 'guest');
         const btn = document.getElementById('submit-btn');
-
-        if (lockedIn) {
-            msg.innerText = "Waiting for friend...";
-            btn.innerText = "✓ Submitted"; btn.className = "btn-locked";
-        } else if (iAmSetting) {
-            msg.innerText = "RANK YOUR REAL PREFERENCES";
-            btn.classList.remove('hidden');
-        } else if (!truth) {
-            msg.innerText = "WAITING FOR FRIEND TO RANK...";
-            btn.classList.add('hidden');
-        } else {
-            msg.innerText = "GUESS THEIR RANKING!";
-            btn.classList.remove('hidden');
-        }
+        if (locked) { btn.innerText = "Locked In..."; btn.disabled = true; }
+        else { btn.innerText = "Lock My Ranking"; btn.disabled = false; }
     }
 
     function sendOrder() {
         const order = [...document.querySelectorAll('.rank-item')].map(li => li.innerText);
-        lockedIn = true;
-        if (!truth) {
-            conn.send({ type: 'TRUTH', order: order });
-            truth = order;
-        } else {
-            conn.send({ type: 'GUESS', order: order });
-            showDetailedResults(truth, order);
-        }
-        updateTurn();
+        locked = true; updateUI();
+        if(!truth) { conn.send({type:'TRUTH', order}); truth = order; }
+        else { conn.send({type:'GUESS', order}); revealAll(truth, order); }
     }
 
-    function showDetailedResults(truthArr, guessArr) {
-        showScreen('screen-results');
-        const listDiv = document.getElementById('results-list');
-        listDiv.innerHTML = "";
-        
+    function revealAll(truthArr, guessArr) {
+        show('screen-results');
+        const stack = document.getElementById('full-reveal');
+        stack.innerHTML = "";
         let pts = 0;
-        truthArr.forEach((item, i) => {
-            const guessIdx = guessArr.indexOf(item);
-            const dist = Math.abs(i - guessIdx);
-            
-            if (dist === 0) pts += 2;
-            else if (dist === 1) pts += 1;
 
-            const row = document.createElement('div');
-            row.className = `result-row ${dist === 0 ? 'perfect' : (dist === 1 ? 'near' : '')}`;
+        // Reveal each of the 5 options based on Truth Order
+        truthArr.forEach((item, i) => {
+            const guessPos = guessArr.indexOf(item);
+            const dist = Math.abs(i - guessPos);
             
-            row.innerHTML = `
-                <div>
-                    <span class="res-label">Truth (#${i+1})</span>
-                    <span class="res-val">${item}</span>
+            if(dist === 0) pts += 2;
+            else if(dist === 1) pts += 1;
+
+            const div = document.createElement('div');
+            div.className = `res-item ${dist === 0 ? 'perfect' : (dist === 1 ? 'close' : '')}`;
+            
+            div.innerHTML = `
+                <div class="res-rank">#${i + 1}</div>
+                <div class="res-content">
+                    <span class="res-name">${item}</span>
+                    <span class="res-sub">Guessed at: #${guessPos + 1}</span>
                 </div>
-                <div class="res-arrow">vs</div>
-                <div>
-                    <span class="res-label">Your Guess</span>
-                    <span class="res-val">#${guessIdx + 1}</span>
-                </div>
+                <div class="res-diff">${dist === 0 ? 'MATCH' : '±' + dist}</div>
             `;
-            listDiv.appendChild(row);
+            stack.appendChild(div);
         });
 
         const score = Math.round((pts / (truthArr.length * 2)) * 100);
         document.getElementById('score-display').innerText = score + "%";
     }
 
-    // --- DRAG/DROP & UI ---
+    // --- Drag Logic ---
     function renderList(opts) {
         const list = document.getElementById('rank-list');
         list.innerHTML = "";
-        [...opts].sort(() => Math.random() - 0.5).forEach(text => {
-            const li = document.createElement('li');
-            li.className = 'rank-item';
-            li.draggable = true;
-            li.innerText = text;
-            li.addEventListener('dragstart', () => { if(!lockedIn) li.classList.add('dragging') });
+        opts.sort(()=>Math.random()-0.5).forEach(t => {
+            const li = document.createElement('div');
+            li.className = 'rank-item'; li.draggable = true; li.innerText = t;
+            li.addEventListener('dragstart', () => li.classList.add('dragging'));
             li.addEventListener('dragend', () => li.classList.remove('dragging'));
             list.appendChild(li);
         });
     }
 
     document.getElementById('rank-list').addEventListener('dragover', e => {
-        if(lockedIn) return;
         e.preventDefault();
         const dragging = document.querySelector('.dragging');
         const list = document.getElementById('rank-list');
-        const afterElement = [...list.querySelectorAll('.rank-item:not(.dragging)')].find(el => {
-            return e.clientY <= el.getBoundingClientRect().top + el.getBoundingClientRect().height / 2;
-        });
-        if (afterElement) list.insertBefore(dragging, afterElement);
-        else list.appendChild(dragging);
+        const after = [...list.querySelectorAll('.rank-item:not(.dragging)')].find(el => e.clientY <= el.getBoundingClientRect().top + el.height/2);
+        list.insertBefore(dragging, after || null);
     });
 
-    function nextRound() {
-        currentQIdx++;
-        conn.send({ type: 'NEXT' });
-        startRound();
-    }
-
-    function showScreen(id) {
-        ['screen-start', 'screen-waiting', 'screen-game', 'screen-results'].forEach(s => {
-            document.getElementById(s).classList.add('hidden');
-        });
-        document.getElementById(id).classList.remove('hidden');
-    }
+    function nextRound() { currentIdx++; conn.send({type:'NEXT'}); startRound(); }
+    function show(id) { document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden')); document.getElementById(id).classList.remove('hidden'); }
 </script>
 </body>
 </html>
