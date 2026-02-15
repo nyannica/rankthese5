@@ -4,433 +4,332 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>DuoRanker Multiplayer</title>
-
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-
 <style>
 :root{
---p1:#6366f1;
---p2:#ec4899;
---bg:#0f172a;
---card:#1e293b;
---text:#f8fafc;
---near:#eab308;
+  --p1:#6366f1;
+  --p2:#ec4899;
+  --bg:#0f172a;
+  --card:#1e293b;
+  --text:#f8fafc;
+  --near:#eab308;
+  --success:#22c55e;
 }
-
 body{
-margin:0;
-font-family:system-ui;
-background:var(--bg);
-color:var(--text);
-display:flex;
-justify-content:center;
-align-items:center;
-min-height:100vh;
-padding:1rem;
-overflow:hidden;
+  margin:0;
+  font-family:system-ui;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  padding:1rem;
+  overflow:hidden;
 }
-
 .container{
-max-width:480px;
-width:100%;
-background:var(--card);
-padding:1.5rem;
-border-radius:24px;
-text-align:center;
-box-shadow:0 20px 50px rgba(0,0,0,0.3);
+  max-width:480px;
+  width:100%;
+  background:var(--card);
+  padding:1.5rem;
+  border-radius:24px;
+  text-align:center;
+  box-shadow:0 20px 50px rgba(0,0,0,0.3);
 }
-
 .hidden{display:none;}
-
 button{
-width:100%;
-padding:1rem;
-border:none;
-border-radius:12px;
-font-weight:bold;
-cursor:pointer;
-margin-top:8px;
-transition:0.2s;
+  width:100%;
+  padding:1rem;
+  border:none;
+  border-radius:12px;
+  font-weight:bold;
+  cursor:pointer;
+  margin-top:8px;
+  transition:0.2s;
 }
-
 .btn-main{background:var(--p1);color:white;}
 .btn-main:active{transform:scale(0.98);}
 .btn-wait{background:#111827;color:#555;border:1px solid #333;cursor:not-allowed;}
-
 input,select{
-width:100%;
-padding:12px;
-margin-bottom:10px;
-border-radius:10px;
-background:#111827;
-color:white;
-border:1px solid #333;
-box-sizing:border-box;
-font-size:1rem;
+  width:100%;
+  padding:12px;
+  margin-bottom:10px;
+  border-radius:10px;
+  background:#111827;
+  color:white;
+  border:1px solid #333;
+  box-sizing:border-box;
+  font-size:1rem;
 }
-
 #rank-list{
-position:relative;
-margin:1.5rem 0;
-display:flex;
-flex-direction:column;
-gap:10px;
+  position:relative;
+  margin:1.5rem 0;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
 }
-
 .rank-item{
-background:#334155;
-padding:16px;
-border-radius:14px;
-cursor:grab;
-touch-action:none;
-text-align:left;
-user-select:none;
-border:1px solid rgba(255,255,255,0.05);
-display:flex;
-align-items:center;
-transition:transform 0.2s, box-shadow 0.2s;
+  background:#334155;
+  padding:16px;
+  border-radius:14px;
+  cursor:grab;
+  touch-action:none;
+  text-align:left;
+  user-select:none;
+  border:1px solid rgba(255,255,255,0.05);
+  display:flex;
+  align-items:center;
+  transition:transform 0.2s, box-shadow 0.2s;
 }
-
 .rank-item::before{
-content:"☰";
-margin-right:12px;
-opacity:0.3;
+  content:"☰";
+  margin-right:12px;
+  opacity:0.3;
 }
-
 .rank-item.active{
-transform:scale(1.04);
-box-shadow:0 10px 30px rgba(0,0,0,0.5);
-background:#475569;
-cursor:grabbing;
-z-index:100;
-transition:none;
+  transform:scale(1.04);
+  box-shadow:0 10px 30px rgba(0,0,0,0.5);
+  background:#475569;
+  cursor:grabbing;
+  z-index:100;
+  transition:none;
 }
-
 .role-badge{
-font-size:0.75rem;
-text-transform:uppercase;
-font-weight:900;
-letter-spacing:1.5px;
-margin-bottom:8px;
+  font-size:0.75rem;
+  text-transform:uppercase;
+  font-weight:900;
+  letter-spacing:1.5px;
+  margin-bottom:8px;
 }
 </style>
 </head>
-
 <body>
-
 <div class="container">
+  <div id="status" style="font-size:.7rem;color:var(--near);margin-bottom:10px;opacity:.7;">Disconnected</div>
 
-<div id="status" style="font-size:.7rem;color:var(--near);margin-bottom:10px;opacity:.7;">
-Disconnected
-</div>
+  <!-- START SCREEN -->
+  <div id="screen-start">
+    <h1>DuoRanker</h1>
+    <select id="mode-select">
+      <option value="romance">Romance Mode</option>
+      <option value="personal">Personal Mode</option>
+    </select>
+    <select id="length-select">
+      <option value="10">10 Questions</option>
+      <option value="20">20 Questions</option>
+      <option value="30">30 Questions</option>
+    </select>
+    <button class="btn-main" onclick="startHost()">Host Game</button>
+    <div style="margin:15px;color:#475569;font-size:.8rem;">OR</div>
+    <input id="join-id" placeholder="Partner's Code" type="tel">
+    <button style="background:#334155;color:white;" onclick="startJoin()">Join Game</button>
+  </div>
 
-<!-- START SCREEN -->
+  <!-- WAIT SCREEN -->
+  <div id="screen-wait" class="hidden">
+    <p>Room Created!</p>
+    <h1 id="room-id" style="font-size:3.5rem;color:var(--p1);letter-spacing:4px;">----</h1>
+    <p style="opacity:.7;">Waiting for partner...</p>
+  </div>
 
-<div id="screen-start">
-<h1>DuoRanker</h1>
+  <!-- GAME SCREEN -->
+  <div id="screen-game" class="hidden">
+    <div id="role" class="role-badge"></div>
+    <h2 id="question"></h2>
+    <div id="rank-list"></div>
+    <button id="submit" class="btn-main" onclick="sendOrder()">Lock My Order</button>
+    <p id="round" style="font-size:.7rem;color:#64748b;"></p>
+  </div>
 
-<select id="mode-select">
-<option value="romance">Romance Mode</option>
-<option value="personal">Personal Mode</option>
-</select>
+  <!-- RESULTS -->
+  <div id="screen-results" class="hidden">
+    <p>Match Score</p>
+    <h1 id="score" style="font-size:5rem;color:var(--p2);">0%</h1>
+    <div id="controls"></div>
+  </div>
 
-<select id="length-select">
-<option value="10">10 Questions</option>
-<option value="20">20 Questions</option>
-<option value="30">30 Questions</option>
-</select>
-
-<button class="btn-main" onclick="startHost()">Host Game</button>
-
-<div style="margin:15px;color:#475569;font-size:.8rem;">OR</div>
-
-<input id="join-id" placeholder="Partner's Code" type="tel">
-<button style="background:#334155;color:white;" onclick="startJoin()">Join Game</button>
-</div>
-
-<!-- WAIT SCREEN -->
-
-<div id="screen-wait" class="hidden">
-<p>Room Created!</p>
-<h1 id="room-id" style="font-size:3.5rem;color:var(--p1);letter-spacing:4px;">----</h1>
-<p style="opacity:.7;">Waiting for partner...</p>
-</div>
-
-<!-- GAME SCREEN -->
-
-<div id="screen-game" class="hidden">
-<div id="role" class="role-badge"></div>
-<h2 id="question"></h2>
-<div id="rank-list"></div>
-<button id="submit" class="btn-main" onclick="sendOrder()">Lock My Order</button>
-<p id="round" style="font-size:.7rem;color:#64748b;"></p>
-</div>
-
-<!-- RESULTS -->
-
-<div id="screen-results" class="hidden">
-<p>Match Score</p>
-<h1 id="score" style="font-size:5rem;color:var(--p2);">0%</h1>
-<div id="controls"></div>
-</div>
-
-<!-- FINAL -->
-
-<div id="screen-final" class="hidden">
-<p>Overall Connection</p>
-<h1 id="final" style="font-size:6rem;color:var(--p1);">0%</h1>
-<button class="btn-main" onclick="location.reload()">New Game</button>
-</div>
-
+  <!-- FINAL -->
+  <div id="screen-final" class="hidden">
+    <p>Overall Connection</p>
+    <h1 id="final" style="font-size:6rem;color:var(--p1);">0%</h1>
+    <button class="btn-main" onclick="location.reload()">New Game</button>
+  </div>
 </div>
 
 <script>
-const bank={
-romance:[
-{q:"Ideal First Date?",opts:["Fine Dining","Quiet Coffee","Gaming Arcade","Sunset Picnic","Movie Night"]},
-{q:"Best Gesture?",opts:["Love Letter","Surprise Trip","Home Cooked Meal","Thoughtful Gift","Warm Hug"]},
-{q:"Physical Touch?",opts:["Holding Hands","Long Hugs","Forehead Kisses","Cuddling","Massages"]},
-{q:"Honeymoon?",opts:["Tropical Island","European City","Mountain Cabin","Theme Park","Cruise"]},
-{q:"Love Language?",opts:["Words of Affirmation","Acts of Service","Receiving Gifts","Quality Time","Physical Touch"]}
-],
-personal:[
-{q:"Life Phase?",opts:["Childhood","Teen Years","Young Adult","Established Career","Retirement"]},
-{q:"Biggest Fear?",opts:["Failure","Being Alone","Physical Pain","Large Crowds","Loss of Control"]},
-{q:"Social Battery?",opts:["Introvert","Extrovert","Ambivert","Selective Socialite","Homebody"]},
-{q:"Morning Routine?",opts:["Hit Snooze","Check Phone","Gym/Run","Quiet Coffee","Straight to Work"]}
-]
+// Question Bank
+const bank = {
+  romance:[
+    {q:"Ideal First Date?",opts:["Fine Dining","Quiet Coffee","Gaming Arcade","Sunset Picnic","Movie Night"]},
+    {q:"Best Gesture?",opts:["Love Letter","Surprise Trip","Home Cooked Meal","Thoughtful Gift","Warm Hug"]},
+    {q:"Physical Touch?", opts:["Holding Hands","Long Hugs","Forehead Kisses","Cuddling","Massages"]},
+    {q:"Honeymoon?", opts:["Tropical Island","European City","Mountain Cabin","Theme Park","Cruise"]},
+    {q:"Love Language?", opts:["Words of Affirmation","Acts of Service","Receiving Gifts","Quality Time","Physical Touch"]}
+  ],
+  personal:[
+    {q:"Life Phase?",opts:["Childhood","Teen Years","Young Adult","Established Career","Retirement"]},
+    {q:"Biggest Fear?",opts:["Failure","Being Alone","Physical Pain","Large Crowds","Loss of Control"]},
+    {q:"Social Battery?", opts:["Introvert","Extrovert","Ambivert","Selective Socialite","Homebody"]},
+    {q:"Morning Routine?", opts:["Hit Snooze","Check Phone","Gym/Run","Quiet Coffee","Straight to Work"]}
+  ]
 };
 
-let peer,conn;
-let role,idx=0,mode="romance",max=10;
-let truth=null,locked=false,total=0;
+// Variables
+let peer, conn, role, idx=0, mode="romance", max=10;
+let truth=null, locked=false, total=0;
 
 const statusEl=document.getElementById("status");
+const list=document.getElementById("rank-list");
 
-function setStatus(t,c="#eab308"){
-statusEl.innerText=t;
-statusEl.style.color=c;
-}
+// Status helper
+function setStatus(t,c="#eab308"){statusEl.innerText=t; statusEl.style.color=c;}
+function show(id){document.querySelectorAll(".container>div").forEach(d=>d.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");}
 
-function show(id){
-document.querySelectorAll(".container>div").forEach(d=>d.classList.add("hidden"));
-document.getElementById(id).classList.remove("hidden");
-}
-
-/* HOST */
-
+// Host
 function startHost(){
-mode=document.getElementById("mode-select").value;
-max=parseInt(document.getElementById("length-select").value);
-
-peer=new Peer(Math.floor(1000+Math.random()*9000)+"");
-role="host";
-
-peer.on("open",id=>{
-document.getElementById("room-id").innerText=id;
-show("screen-wait");
-setStatus("Waiting for guest...");
-});
-
-peer.on("connection",c=>{
-conn=c;
-setupConnection();
-});
+  mode=document.getElementById("mode-select").value;
+  max=parseInt(document.getElementById("length-select").value);
+  peer=new Peer(Math.floor(1000+Math.random()*9000)+"");
+  role="host";
+  peer.on("open",id=>{
+    document.getElementById("room-id").innerText=id;
+    show("screen-wait");
+    setStatus("Waiting for guest...");
+  });
+  peer.on("connection",c=>{conn=c; setupConnection();});
 }
 
-/* GUEST */
-
+// Guest
 function startJoin(){
-peer=new Peer();
-role="guest";
-
-peer.on("open",()=>{
-const id=document.getElementById("join-id").value;
-if(!id) return alert("Enter a code!");
-
-setStatus("Connecting...");
-conn=peer.connect(id,{reliable:true});
-setupConnection();
-});
+  peer=new Peer();
+  role="guest";
+  peer.on("open",()=>{
+    const id=document.getElementById("join-id").value;
+    if(!id) return alert("Enter a code!");
+    setStatus("Connecting...");
+    conn=peer.connect(id,{reliable:true});
+    setupConnection();
+  });
 }
 
-/* CONNECTION */
-
+// Connection
 function setupConnection(){
+  conn.on("open",()=>{
+    setStatus("Connected ✔","#22c55e");
+    if(role==="guest") conn.send({type:"READY"});
+  });
 
-conn.on("open",()=>{
-setStatus("Connected ✔","#22c55e");
-if(role==="guest") conn.send({type:"READY"});
-});
+  conn.on("data",d=>{
+    if(d.type==="READY" && role==="host"){
+      conn.send({type:"START",mode,max});
+      enterGame();
+    }
+    if(d.type==="START"){
+      mode=d.mode; max=d.max;
+      enterGame();
+    }
+    if(d.type==="TRUTH"){truth=d.order; ui();}
+    if(d.type==="GUESS"){reveal(truth,d.order);}
+    if(d.type==="NEXT"){idx=d.i;if(idx>=max) final();else round();}
+  });
 
-conn.on("data",d=>{
-
-if(d.type==="READY" && role==="host"){
-conn.send({type:"START",mode,max});
-enterGame();
+  conn.on("close",()=>{setStatus("Disconnected","#ef4444");alert("Connection lost");location.reload();});
+  conn.on("error",()=>{setStatus("Connection error","#ef4444");});
 }
 
-if(d.type==="START"){
-mode=d.mode;
-max=d.max;
-enterGame();
-}
-
-if(d.type==="TRUTH"){truth=d.order;ui();}
-if(d.type==="GUESS"){reveal(truth,d.order);}
-
-if(d.type==="NEXT"){
-idx=d.i;
-if(idx>=max) final();
-else round();
-}
-});
-
-conn.on("close",()=>{
-setStatus("Disconnected","#ef4444");
-alert("Connection lost");
-location.reload();
-});
-
-conn.on("error",()=>{
-setStatus("Connection error","#ef4444");
-});
-}
-
-/* GAME */
-
-function enterGame(){
-show("screen-game");
-round();
-}
-
+// Game
+function enterGame(){show("screen-game"); round();}
 function round(){
-truth=null;
-locked=false;
-
-const qSet=bank[mode];
-const q=qSet[idx%qSet.length];
-
-document.getElementById("question").innerText=q.q;
-document.getElementById("round").innerText=`Question ${idx+1} of ${max}`;
-
-render(q.opts);
-ui();
+  truth=null; locked=false;
+  const q=bank[mode][idx%bank[mode].length];
+  document.getElementById("question").innerText=q.q;
+  document.getElementById("round").innerText=`Question ${idx+1} of ${max}`;
+  render(q.opts); ui();
 }
 
 function ui(){
-const chooser=
-(idx%2===0 && role==="host") ||
-(idx%2!==0 && role==="guest");
-
-const r=document.getElementById("role");
-const b=document.getElementById("submit");
-
-r.innerText=chooser
-? "Setting the Truth"
-: (truth ? "Your Turn to Guess" : "Partner is choosing...");
-
-r.style.color=chooser?"var(--p2)":"var(--p1)";
-b.classList.toggle("hidden",!chooser && !truth);
-b.disabled=locked;
-b.innerText=locked?"Order Locked":"Lock Order";
+  const chooser=(idx%2===0 && role==="host") || (idx%2!==0 && role==="guest");
+  const r=document.getElementById("role");
+  const b=document.getElementById("submit");
+  r.innerText=chooser?"Setting the Truth":(truth?"Your Turn to Guess":"Partner is choosing...");
+  r.style.color=chooser?"var(--p2)":"var(--p1)";
+  b.classList.toggle("hidden",!chooser && !truth);
+  b.disabled=locked;
+  b.innerText=locked?"Order Locked":"Lock Order";
 }
 
+// Send order
 function sendOrder(){
-const order=[...document.querySelectorAll(".rank-item")].map(x=>x.innerText);
-
-locked=true;
-ui();
-
-if(!truth){
-truth=order;
-conn.send({type:"TRUTH",order});
-}else{
-conn.send({type:"GUESS",order});
-reveal(truth,order);
-}
+  const order=[...list.querySelectorAll(".rank-item")].map(x=>x.innerText);
+  locked=true; ui();
+  if(!truth){truth=order; conn.send({type:"TRUTH",order});}
+  else{conn.send({type:"GUESS",order}); reveal(truth,order);}
 }
 
+// Reveal results
 function reveal(t,g){
-show("screen-results");
-
-let pts=0;
-t.forEach((x,i)=>{
-const d=Math.abs(i-g.indexOf(x));
-if(d===0) pts+=2;
-else if(d===1) pts+=1;
-});
-
-const s=Math.round((pts/10)*100);
-total+=s;
-
-document.getElementById("score").innerText=s+"%";
-
-document.getElementById("controls").innerHTML=
-(role==="host")
-? `<button class="btn-main" onclick="next()">${idx+1>=max?"Final Results":"Next Round →"}</button>`
-: `<button class="btn-wait">Waiting for Host...</button>`;
+  show("screen-results");
+  let pts=0;
+  t.forEach((x,i)=>{const d=Math.abs(i-g.indexOf(x));if(d===0) pts+=2;else if(d===1) pts+=1;});
+  const s=Math.round((pts/10)*100); total+=s;
+  document.getElementById("score").innerText=s+"%";
+  const c=document.getElementById("controls");
+  if(role==="host"){
+    c.innerHTML=`<button class="btn-main" onclick="next()">${idx+1>=max?"Final Results":"Next Round →"}</button>`;
+  }else{
+    c.innerHTML=`<button class="btn-wait" disabled>Waiting for Host...</button>`;
+  }
 }
 
+// Next round (host only)
 function next(){
-if(role!=="host") return;
-
-idx++;
-conn.send({type:"NEXT",i:idx});
-
-if(idx>=max) final();
-else round();
+  if(role!=="host") return;
+  idx++;
+  conn.send({type:"NEXT",i:idx});
+  if(idx>=max) final(); else round();
 }
 
-function final(){
-show("screen-final");
-document.getElementById("final").innerText=Math.round(total/max)+"%";
-}
+// Final screen
+function final(){show("screen-final"); document.getElementById("final").innerText=Math.round(total/max)+"%";}
 
-/* DRAG */
-
-let active=null;
-const list=document.getElementById("rank-list");
-
+// Drag & swipe
+let active=null, startY=0;
 list.addEventListener("pointerdown",e=>{
-if(locked) return;
-const item=e.target.closest(".rank-item");
-if(!item) return;
-active=item;
-active.classList.add("active");
-active.setPointerCapture(e.pointerId);
+  if(locked) return;
+  const item=e.target.closest(".rank-item");
+  if(!item) return;
+  active=item;
+  startY=e.clientY - active.getBoundingClientRect().top;
+  active.classList.add("active");
+  active.setPointerCapture(e.pointerId);
 });
-
 list.addEventListener("pointermove",e=>{
-if(!active) return;
-
-const siblings=[...list.querySelectorAll(".rank-item:not(.active)")];
-
-const next=siblings.find(sib=>{
-const box=sib.getBoundingClientRect();
-return e.clientY<box.top+box.height/2;
+  if(!active) return;
+  const listRect=list.getBoundingClientRect();
+  const constrainedY=Math.max(0, Math.min(e.clientY - listRect.top - startY, listRect.height - active.offsetHeight));
+  active.style.transform=`translateY(${constrainedY-active.offsetTop}px)`;
+  const siblings=[...list.querySelectorAll(".rank-item:not(.active)")];
+  const nextSibling=siblings.find(sib=>e.clientY<=sib.getBoundingClientRect().top+sib.getBoundingClientRect().height/2);
+  if(nextSibling!==active.nextSibling) list.insertBefore(active,nextSibling||null);
 });
-
-list.insertBefore(active,next||null);
-});
-
 list.addEventListener("pointerup",e=>{
-if(!active) return;
-active.classList.remove("active");
-active.releasePointerCapture(e.pointerId);
-active=null;
+  if(!active) return;
+  active.classList.remove("active");
+  active.style.transform="";
+  active.releasePointerCapture(e.pointerId);
+  active=null;
 });
 
+// Render rank items
 function render(opts){
-list.innerHTML="";
-[...opts].sort(()=>Math.random()-.5).forEach(t=>{
-const d=document.createElement("div");
-d.className="rank-item";
-d.innerText=t;
-list.appendChild(d);
-});
+  list.innerHTML="";
+  [...opts].sort(()=>Math.random()-.5).forEach(t=>{
+    const d=document.createElement("div");
+    d.className="rank-item";
+    d.innerText=t;
+    list.appendChild(d);
+  });
 }
 </script>
-
 </body>
 </html>
