@@ -3,217 +3,220 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Rank5: Dark Valentine</title>
+    <title>DuoRanker: Soulmates</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { 
-            /* Dark Valentine Palette */
-            --p1: #f43f5e;    /* Radiant Rose */
-            --p2: #881337;    /* Deep Wine */
-            --bg: #0f0507;    /* Obsidian Red */
-            --card: #1c0a0e;  /* Dark Cocoa/Rose */
-            --text: #fff1f2;  /* Soft Blush White */
-            --success: #fb7185; /* Glowing Pink */
-            --near: #9f1239;  /* Crimson */
-            --skip: #4c0519;  /* Dark Burgundy */
-            --border: #fb718533; /* Translucent Rose Border */
+            --p1: #be123c; /* Rose Red */
+            --p2: #701a75; /* Deep Velvet */
+            --bg: #0a0505; /* Obsidian */
+            --card: #1a0b0b; /* Dark Chocolate/Wine */
+            --text: #ffe4e6; /* Soft Pink Text */
+            --success: #f43f5e; /* Bright Rose */
+            --near: #fb7185; /* Soft Petal */
+            --skip: #4c0519; /* Dried Rose */
+            --accent: #fda4af; 
         }
-
+        
         body { 
             margin:0; 
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            font-family: 'Georgia', serif; 
             background: var(--bg); 
-            /* Subtle dark heart-grid pattern */
-            background-image: radial-gradient(#310a12 1.5px, transparent 1.5px);
-            background-size: 30px 30px;
-            color: var(--text); 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            min-height: 100vh; 
-            padding: 1rem; 
-            overflow: hidden; 
+            background-image: radial-gradient(circle at center, #2d0606 0%, #0a0505 100%);
+            color:var(--text); 
+            display:flex; 
+            justify-content:center; 
+            align-items:center; 
+            min-height:100vh; 
+            padding:1rem; 
+            overflow:hidden; 
             touch-action: none; 
         }
 
-        .container { 
-            max-width: 480px; 
-            width: 100%; 
-            background: var(--card); 
-            padding: 2rem; 
-            border-radius: 32px; 
-            text-align: center; 
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 20px rgba(244, 63, 94, 0.1); 
-            max-height: 95vh; 
-            overflow-y: auto; 
-            position: relative; 
-            border: 1px solid var(--border);
+        /* Floating Hearts Background Effect */
+        body::before {
+            content: "♥";
+            position: fixed;
+            top: -10%;
+            left: 10%;
+            font-size: 2rem;
+            color: rgba(190, 18, 60, 0.1);
+            animation: float 15s infinite linear;
+            z-index: -1;
         }
+
+        @keyframes float {
+            0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+            50% { opacity: 0.5; }
+            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+        }
+
+        .container { 
+            max-width:480px; 
+            width:100%; 
+            background:var(--card); 
+            padding:2rem; 
+            border-radius:32px; 
+            text-align:center; 
+            box-shadow: 0 0 30px rgba(190, 18, 60, 0.2), inset 0 0 15px rgba(0,0,0,0.5);
+            border: 1px solid rgba(190, 18, 60, 0.3);
+            max-height:95vh; 
+            overflow-y:auto; 
+            position: relative; 
+        }
+
+        h1 { font-style: italic; color: var(--accent); text-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
 
         .hidden { display:none !important; }
 
         button { 
-            width: 100%; 
-            padding: 1.1rem; 
-            border: none; 
-            border-radius: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            margin-top: 10px; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
-            font-size: 1rem; 
-            color: white; 
+            width:100%; 
+            padding:1.1rem; 
+            border:none; 
+            border-radius:100px; 
+            font-weight:bold; 
+            cursor:pointer; 
+            margin-top:12px; 
+            transition:0.3s; 
+            font-size:1rem; 
+            color:white; 
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
-        button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(244, 63, 94, 0.4); }
-        button:active { transform: scale(0.98); }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
+        button:disabled { opacity: 0.4; transform: none; }
 
-        .btn-main { background: linear-gradient(135deg, var(--p1), #be123c); }
-        .btn-alt { background: var(--p2); border: 1px solid var(--p1); }
-        .btn-outline { background: transparent; border: 2px solid var(--p2); color: var(--p1); }
-        .btn-skip { background: var(--skip); margin-top: 15px; font-size: 0.8rem; padding: 0.7rem; color: var(--p1); border: 1px solid #ffffff11; }
+        .btn-main { background: linear-gradient(45deg, var(--p1), #881337); box-shadow: 0 4px 15px rgba(190, 18, 60, 0.4); }
+        .btn-alt { background: linear-gradient(45deg, var(--p2), #4a044e); }
+        .btn-outline { background: transparent; border: 1px solid var(--p1); color: var(--accent); }
+        .btn-skip { background: transparent; color: var(--skip); border: 1px solid var(--skip); font-size: 0.7rem; margin-top: 20px; }
 
         input, select { 
-            width: 100%; 
-            padding: 14px; 
-            margin-bottom: 12px; 
-            border-radius: 14px; 
-            background: #00000044; 
-            color: white; 
-            border: 1px solid var(--border); 
-            box-sizing: border-box; 
-            font-size: 1rem; 
-            outline: none;
-        }
-        input:focus { border-color: var(--p1); }
-
-        #rank-list { position: relative; margin: 1.5rem 0; display: flex; flex-direction: column; gap: 12px; }
-
-        .rank-item { 
-            background: #2d1116; 
-            color: var(--text);
-            padding: 16px; 
-            border-radius: 18px; 
-            cursor: grab; 
-            text-align: left; 
-            user-select: none; 
-            display: flex; 
-            align-items: center; 
-            border: 1px solid var(--border); 
-            font-size: 1rem;
-            touch-action: none; 
-            transition: background 0.2s, transform 0.2s;
+            width:100%; 
+            padding:14px; 
+            margin-bottom:12px; 
+            border-radius:15px; 
+            background:#000000; 
+            color:var(--accent); 
+            border:1px solid #4c0519; 
+            box-sizing:border-box; 
+            font-size:1rem; 
         }
 
-        .rank-item::before { content: "❤"; margin-right: 15px; color: var(--p1); filter: drop-shadow(0 0 5px var(--p1)); }
+        #rank-list { margin:1.5rem 0; display:flex; flex-direction:column; gap:10px; }
         
-        .rank-item.active { 
-            background: var(--p2); 
-            border-color: var(--p1); 
-            transform: scale(1.05); 
-            z-index: 10; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5), 0 0 15px rgba(244, 63, 94, 0.3); 
+        .rank-item { 
+            background: rgba(76, 5, 25, 0.3); 
+            padding:16px; 
+            border-radius:15px; 
+            cursor:grab; 
+            text-align:left; 
+            user-select:none; 
+            display:flex; 
+            align-items:center; 
+            border:1px solid rgba(190, 18, 60, 0.2); 
+            font-size:0.95rem;
+            touch-action: none; 
+            transition: background 0.2s;
         }
-
-        .rank-preview { opacity: 0.3; cursor: default; pointer-events: none; border: 2px dashed var(--p2); background: transparent; }
-
+        
+        .rank-item::before { content:"❤"; margin-right:12px; color: var(--p1); opacity:0.6; font-size: 0.8rem; }
+        .rank-item.active { background:var(--p1); border-color: var(--accent); transform: scale(1.05); z-index: 10; }
+        .rank-preview { opacity: 0.4; cursor: default; pointer-events: none; border: 1px dashed var(--p1); }
+        
         #live-points { 
-            background: #00000055; 
-            padding: 14px; 
-            border-radius: 20px; 
+            background: rgba(0,0,0,0.5); 
+            padding: 12px; 
+            border-radius: 50px; 
             margin-bottom: 20px; 
             display: flex; 
             justify-content: space-around; 
-            font-weight: bold; 
-            border: 1px solid var(--border); 
-            font-size: 0.9rem; 
-            backdrop-filter: blur(5px);
+            border: 1px solid var(--p1); 
+            font-size: 0.8rem;
+            font-weight: bold;
         }
 
         .result-row { 
             display: flex; 
             justify-content: space-between; 
-            padding: 14px; 
-            border-bottom: 1px solid #ffffff08; 
-            font-size: 0.95rem; 
+            padding: 12px; 
+            border-bottom: 1px solid rgba(190, 18, 60, 0.1); 
+            font-size: 0.9rem;
         }
 
-        #steal-timer { font-size: 0.8rem; margin-top: 8px; color: var(--p1); font-weight: bold; text-shadow: 0 0 10px var(--p1); }
-        .winner-banner { font-size: 2.5rem; margin: 25px 0; color: var(--p1); text-shadow: 0 0 20px var(--p1); font-weight: 900; }
-        
-        /* Custom Scrollbar */
-        .container::-webkit-scrollbar { width: 5px; }
-        .container::-webkit-scrollbar-track { background: transparent; }
-        .container::-webkit-scrollbar-thumb { background: var(--p2); border-radius: 10px; }
+        #steal-timer { font-size: 0.75rem; margin-top: 10px; color: var(--accent); font-style: italic; }
+        .winner-banner { 
+            font-size: 2.2rem; 
+            margin: 20px 0; 
+            color: var(--accent); 
+            text-shadow: 0 0 20px var(--p1); 
+        }
+        #status { font-size:0.6rem; color:var(--p1); margin-bottom:5px; text-transform:uppercase; font-weight: bold; letter-spacing: 1px;}
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="status" style="font-size:0.65rem; color:var(--p1); margin-bottom:10px; text-transform:uppercase; font-weight: 900; letter-spacing: 2px;">Establishing Connection...</div>
+    <div id="status">Initializing...</div>
     
     <div id="live-points" class="hidden">
-        <span id="p-host-score" style="color:var(--p1)">Host: 0</span>
-        <span id="p-guest-score" style="color:var(--success)">Guest: 0</span>
+        <span id="p-host-score" style="color:var(--accent)">Host: 0</span>
+        <span id="p-guest-score" style="color:var(--p1)">Guest: 0</span>
     </div>
 
     <div id="screen-start">
-        <h1 style="color: var(--p1); margin: 0 0 20px 0; text-shadow: 0 0 15px rgba(244,63,94,0.4);">RANK 5</h1>
+        <h1>DuoRanker: <i>Soulmates</i></h1>
         <select id="mode-select">
-            <option value="gaming">Video Games</option>
-            <option value="travel">Travel & Adventure</option>
-            <option value="career">Career & Ambition</option>
-            <option value="romance">Romance</option>
-            <option value="personal">Personal</option>
-            <option value="chaos">CHAOS MODE (Randomized questions)</option>
+            <option value="romance">Romance 💖</option>
+            <option value="personal">Compatibility 🏹</option>
+            <option value="gaming">Video Games 🎮</option>
+            <option value="travel">Travel & Adventure ✈️</option>
+            <option value="career">Career & Ambition 💼</option>
+            <option value="chaos">🔥 CHAOS MODE</option>
         </select>
         <select id="round-select">
             <option value="5">Blitz (5 Rounds)</option>
             <option value="10" selected>Standard (10 Rounds)</option>
             <option value="20">Marathon (20 Rounds)</option>
         </select>
-        <button id="host-btn" class="btn-main" onclick="startHost()" disabled>Syncing Data...</button>
-        <div style="margin: 20px 0; height: 1px; background: var(--border);"></div>
-        <input id="join-id" placeholder="Enter Partner's Code" type="tel">
-        <button class="btn-outline" onclick="startJoin()">Join Match</button>
+        <button id="host-btn" class="btn-main" onclick="startHost()" disabled>Loading Bank...</button>
+        <input id="join-id" placeholder="Partner Code" type="tel" style="margin-top:15px;">
+        <button class="btn-outline" onclick="startJoin()">Join Game</button>
     </div>
 
     <div id="screen-wait" class="hidden">
-        <p style="opacity: 0.7;">Your Room Code</p>
-        <h1 id="room-id" style="font-size:4rem; color:var(--p1); margin:15px 0; letter-spacing: 5px; text-shadow: 0 0 20px var(--p1);">----</h1>
-        <p style="font-size: 0.8rem; color: var(--success);">Waiting for your partner to join...</p>
+        <p>Invite your partner</p>
+        <h1 id="room-id" style="font-size:3.5rem; color:var(--p1); margin:10px 0;">----</h1>
     </div>
 
     <div id="screen-game" class="hidden">
-        <div id="role-tag" style="font-size:0.75rem; font-weight:900; letter-spacing:2px; margin-bottom:10px;"></div>
-        <h2 id="question" style="font-size:1.3rem; margin:15px 0; color: var(--text); line-height: 1.4;"></h2>
+        <div id="role-tag" style="font-size:0.7rem; font-weight:900; letter-spacing:1px; margin-bottom:5px;"></div>
+        <h2 id="question" style="font-size:1.1rem; margin:10px 0;"></h2>
         <div id="rank-list"></div>
-        <button id="submit" class="btn-main" onclick="sendOrder()">Confirm Order</button>
-        <button id="skip-btn" class="btn-skip" onclick="requestSkip()">Skip This Question</button>
-        <p id="round-info" style="font-size:0.75rem; opacity:0.5; margin-top:15px;"></p>
+        <button id="submit" class="btn-main" onclick="sendOrder()">Lock My Order</button>
+        <button id="skip-btn" class="btn-skip" onclick="requestSkip()">Skip Question ⏭️</button>
+        <p id="round-info" style="font-size:0.7rem; color:var(--near); margin-top:10px;"></p>
     </div>
 
     <div id="screen-results" class="hidden">
-        <h2 id="res-title" style="color: var(--p1);">Match Precision</h2>
-        <div id="result-list" style="margin: 20px 0; background: #00000033; border-radius: 15px;"></div>
+        <h2 id="res-title">The Connection</h2>
+        <div id="result-list" style="margin: 15px 0;"></div>
         <div id="controls"></div>
         <div id="steal-timer"></div>
     </div>
 
     <div id="screen-final" class="hidden">
-        <h1 style="color: var(--p1);">FINALE</h1>
+        <h1>Fate Decided</h1>
         <div class="winner-banner" id="winner-text"></div>
-        <div id="final-stats" style="margin-bottom: 30px; font-size: 1.2rem;"></div>
-        <button class="btn-main" onclick="location.reload()">Rematch</button>
+        <div id="final-stats" style="margin-bottom: 20px;"></div>
+        <button class="btn-main" onclick="location.reload()">Play Again</button>
     </div>
 </div>
 
 <script>
 let bank = null; 
-let peer, conn, role, idx=0, max=10, mode="gaming", truth=null, locked=false;
+let peer, conn, role, idx=0, max=10, mode="romance", truth=null, locked=false;
 let scores = { host: 0, guest: 0 }, deck = [], currentDesigner="host";
 let stealInterval;
 
@@ -221,13 +224,13 @@ async function initGame() {
     try {
         const response = await fetch('questions.json');
         bank = await response.json();
-        document.getElementById("status").innerText = "Systems Active";
+        document.getElementById("status").innerText = "Ready to Begin";
         const hBtn = document.getElementById("host-btn");
         hBtn.disabled = false;
-        hBtn.innerText = "Host Versus";
+        hBtn.innerText = "Host Connection";
     } catch (e) {
-        document.getElementById("status").innerText = "Error: Use Localhost/Pages";
-        console.error("Fetch failed", e);
+        document.getElementById("status").innerText = "Error Loading Questions";
+        console.error("Could not load questions.json", e);
     }
 }
 
@@ -259,14 +262,14 @@ function startJoin() {
     peer = new Peer(); role = "guest";
     peer.on("open", () => { 
         const id = document.getElementById("join-id").value;
-        if(!id) return alert("Room code required");
+        if(!id) return alert("Enter a code!");
         conn = peer.connect(id); setup(); 
     });
 }
 
 function setup() {
     conn.on("open", () => { 
-        document.getElementById("status").innerText = "Sync Active";
+        document.getElementById("status").innerText = "Connection Live";
         document.getElementById("live-points").classList.remove("hidden");
         if(role === "guest") conn.send({ type: "READY" }); 
     });
@@ -301,11 +304,11 @@ function replay() {
     locked = false; 
     const btn = document.getElementById("submit");
     btn.disabled = false;
-    btn.innerText = "Confirm Order";
+    btn.innerText = "Lock My Order";
     btn.classList.remove("hidden");
 
     document.getElementById("question").innerText = deck[idx].q;
-    document.getElementById("round-info").innerText = `Round ${idx + 1} / ${max}`;
+    document.getElementById("round-info").innerText = `Step ${idx + 1} of ${max}`;
     const isGuesserWaiting = (role !== currentDesigner && !truth);
     render(deck[idx].opts, isGuesserWaiting);
     ui(); show("screen-game");
@@ -314,8 +317,8 @@ function replay() {
 function ui() {
     const isCr = (role === currentDesigner);
     const tag = document.getElementById("role-tag");
-    tag.innerText = isCr ? "⭐ DEFINE YOUR TRUTH" : (truth ? "🔍 READ THEIR HEART" : "⌛ OBSERVE OPTIONS...");
-    tag.style.color = isCr ? "var(--p1)" : "var(--success)";
+    tag.innerText = isCr ? "⭐ SET YOUR TRUTH" : (truth ? "🔍 GUESS THEIR TRUTH" : "⌛ PREVIEWING OPTIONS...");
+    tag.style.color = isCr ? "var(--accent)" : "var(--p1)";
     document.getElementById("submit").classList.toggle("hidden", !isCr && !truth);
     document.getElementById("skip-btn").classList.toggle("hidden", !isCr && !truth);
 }
@@ -331,7 +334,7 @@ function render(opts, isPreview) {
 }
 
 function requestSkip() {
-    if(confirm("Skip this round?")) {
+    if(confirm("Abandon this thought? No points awarded.")) {
         conn.send({ type: "SKIP" });
         handleSkip();
     }
@@ -343,13 +346,13 @@ function handleSkip() {
         conn.send({type: "NEXT", i: idx});
         (idx >= max) ? showFinalScore() : round();
     } else {
-        document.getElementById("status").innerText = "Skipping Round...";
+        document.getElementById("status").innerText = "Skipping...";
     }
 }
 
 function sendOrder() {
     const btn = document.getElementById("submit");
-    btn.innerText = "LOCKED ❤";
+    btn.innerText = "Order Locked ❤";
     btn.disabled = true;
     const order = [...document.querySelectorAll(".rank-item")].map(x => x.innerText);
     locked = true; 
@@ -371,7 +374,7 @@ function reveal(t, g) {
         const actualPos = g.indexOf(x); const diff = Math.abs(i - actualPos);
         if(diff === 0) pts += 2; else if(diff === 1) pts += 1;
         let div = document.createElement("div"); div.className = "result-row";
-        div.innerHTML = `<span>${x}</span><span style="color:${diff===0?'var(--success)':'rgba(255,255,255,0.3)'}">${diff===0?'Perfect Match':'Rank #'+(actualPos+1)}</span>`;
+        div.innerHTML = `<span>${x}</span><span style="color:${diff===0?'var(--success)':'var(--text)'}">Rank #${actualPos+1}</span>`;
         list.appendChild(div);
     });
     
@@ -389,21 +392,21 @@ function reveal(t, g) {
         let timeLeft = 5;
         let b = document.createElement("button"); 
         b.className="btn-alt"; b.id="btn-steal-action";
-        b.innerText=`Steal Turn (${timeLeft}s)`;
+        b.innerText=`🔄 Steal Turn (${timeLeft}s)`;
         b.onclick = () => { conn.send({type:"STEAL"}); currentDesigner=role; replay(); };
         ctrl.appendChild(b);
 
         stealInterval = setInterval(() => {
             timeLeft--;
-            if(timeLeft > 0) b.innerText = `Steal Turn (${timeLeft}s)`;
-            else { b.disabled = true; b.innerText = "Too Late"; clearInterval(stealInterval); }
+            if(timeLeft > 0) b.innerText = `🔄 Steal Turn (${timeLeft}s)`;
+            else { b.disabled = true; b.innerText = "Time Expired"; clearInterval(stealInterval); }
         }, 1000);
     }
 
     if(role === "host") {
         let bNext = document.createElement("button"); 
         bNext.className="btn-main"; 
-        bNext.innerText=(idx+1 >= max) ? "Conclusion" : "Proceed";
+        bNext.innerText=(idx+1 >= max) ? "Reveal the Bond" : "Next Round";
         bNext.onclick = () => { 
             clearInterval(stealInterval);
             idx++; 
@@ -418,14 +421,20 @@ function reveal(t, g) {
 function showFinalScore() {
     const winnerText = document.getElementById("winner-text");
     const stats = document.getElementById("final-stats");
-    let winner = (scores.host > scores.guest) ? "HOST DOMINATES" : (scores.guest > scores.host) ? "GUEST VICTORIOUS" : "PERFECT HARMONY";
+    
+    let winner = "";
+    if(scores.host > scores.guest) winner = "HOST REIGNS 🥀";
+    else if(scores.guest > scores.host) winner = "GUEST REIGNS 🥀";
+    else winner = "SOUL BOUND 🤝";
+    
     winnerText.innerText = winner;
-    stats.innerHTML = `<p style="color:var(--p1)">Host: ${scores.host}</p><p style="color:var(--success)">Guest: ${scores.guest}</p>`;
+    stats.innerHTML = `<p>Host Heart: ${scores.host}</p><p>Guest Heart: ${scores.guest}</p>`;
+    
     document.getElementById("live-points").classList.add("hidden");
     show("screen-final");
 }
 
-// DRAG AND DROP (Mobile Optimized)
+// DRAG AND DROP LOGIC
 let active = null;
 document.addEventListener("pointerdown", e => { 
     const item = e.target.closest(".rank-item");
