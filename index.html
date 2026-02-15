@@ -27,7 +27,7 @@ input,select{ width:100%; padding:12px; margin-bottom:10px; border-radius:10px; 
   <div id="status" style="font-size:.7rem;color:var(--near);margin-bottom:10px;opacity:.7;">Disconnected</div>
 
   <div id="screen-start">
-    <h1>DuoRanker</h1>
+    <h1 style="margin-bottom:20px;">DuoRanker</h1>
     <select id="mode-select">
       <option value="romance">Romance Mode</option>
       <option value="personal">Personal Mode</option>
@@ -54,19 +54,19 @@ input,select{ width:100%; padding:12px; margin-bottom:10px; border-radius:10px; 
     <h2 id="question"></h2>
     <div id="rank-list"></div>
     <button id="submit" class="btn-main" onclick="sendOrder()">Lock My Order</button>
-    <p id="round" style="font-size:.7rem;color:#64748b;"></p>
+    <p id="round" style="font-size:.7rem;color:#64748b; margin-top:15px;"></p>
   </div>
 
   <div id="screen-results" class="hidden">
-    <p>Match Score</p>
-    <h1 id="score" style="font-size:5rem;color:var(--p2);">0%</h1>
-    <div id="controls"></div>
+    <p style="margin:0; opacity:0.7;">Match Score</p>
+    <h1 id="score" style="font-size:5rem;color:var(--p2); margin:0;">0%</h1>
+    <div id="controls" style="margin-top:20px;"></div>
   </div>
 
   <div id="screen-final" class="hidden">
     <p>Overall Connection</p>
-    <h1 id="final" style="font-size:6rem;color:var(--p1);">0%</h1>
-    <button class="btn-main" onclick="location.reload()">New Game</button>
+    <h1 id="final" style="font-size:6rem;color:var(--p1); margin:0;">0%</h1>
+    <button class="btn-main" onclick="location.reload()" style="margin-top:20px;">New Game</button>
   </div>
 </div>
 
@@ -170,7 +170,6 @@ function reveal(t,g){
   document.getElementById("score").innerText=s+"%";
   const c=document.getElementById("controls");
   
-  // HOST ONLY CONTROL
   if(role==="host"){
     c.innerHTML=`<button class="btn-main" onclick="hostNext()">${idx+1>=max?"Final Results":"Next Round →"}</button>`;
   } else {
@@ -178,11 +177,10 @@ function reveal(t,g){
   }
 }
 
-// THE SPECIFIC HOST CONTROL FUNCTION
 function hostNext(){
   if(role !== "host") return;
   idx++;
-  conn.send({type:"NEXT", i:idx}); // Sync guest
+  conn.send({type:"NEXT", i:idx});
   if(idx >= max) final(); else round();
 }
 
