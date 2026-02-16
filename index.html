@@ -31,10 +31,23 @@
         .btn-main { background: linear-gradient(45deg, var(--p1), #881337); }
         .btn-alt { background: linear-gradient(45deg, var(--p2), #4a044e); }
         .btn-outline { background: transparent; border: 1px solid var(--p1); color: var(--accent); }
+        
         input, select { 
             width:100%; padding:14px; margin-bottom:12px; border-radius:15px; 
             background:#000000; color:var(--accent); border:1px solid #4c0519; 
+            text-align: center; font-size: 1rem;
         }
+        /* Fixed Partner Code Field */
+        #join-id {
+            border: 2px solid var(--p1);
+            background: rgba(190, 18, 60, 0.1);
+            letter-spacing: 4px;
+            font-weight: bold;
+            color: white;
+            margin-top: 20px;
+        }
+        #join-id::placeholder { letter-spacing: normal; font-weight: normal; color: rgba(255,255,255,0.4); }
+
         .rank-item { 
             background: rgba(76, 5, 25, 0.3); padding:16px; border-radius:15px; 
             cursor:grab; text-align:left; margin-bottom:10px; border:1px solid rgba(190, 18, 60, 0.2);
@@ -43,17 +56,10 @@
         #live-points { display: flex; justify-content: space-around; margin-bottom: 20px; font-size: 0.8rem; }
         .result-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333; }
         
-        /* Category Badge Style */
         #cat-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            background: var(--p2);
-            border-radius: 20px;
-            font-size: 0.6rem;
-            font-weight: bold;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
+            display: inline-block; padding: 4px 12px; background: var(--p2);
+            border-radius: 20px; font-size: 0.6rem; font-weight: bold;
+            letter-spacing: 1px; margin-bottom: 10px; text-transform: uppercase;
             border: 1px solid var(--accent);
         }
     </style>
@@ -83,12 +89,12 @@
             <option value="10" selected>10 Rounds</option>
         </select>
         <button id="host-btn" class="btn-main" onclick="startHost()" disabled>Loading...</button>
-        <input id="join-id" placeholder="Partner Code" type="tel" style="margin-top:15px;">
+        <input id="join-id" placeholder="PARTNER CODE" type="tel">
         <button class="btn-outline" onclick="startJoin()">Join Game</button>
     </div>
 
     <div id="screen-custom" class="hidden">
-        <h2>Custom Round</h2>
+        <h2 id="custom-title">Create Question</h2>
         <input id="custom-q" placeholder="The Question?">
         <div id="custom-opts">
             <input class="custom-opt" placeholder="Option 1">
@@ -97,7 +103,7 @@
             <input class="custom-opt" placeholder="Option 4">
             <input class="custom-opt" placeholder="Option 5">
         </div>
-        <button class="btn-main" onclick="saveCustomAndHost()">Begin Custom Game</button>
+        <button class="btn-main" onclick="saveCustomAndHost()">Begin Game</button>
         <button class="btn-outline" onclick="show('screen-start')">Back</button>
     </div>
 
@@ -107,14 +113,15 @@
     </div>
 
     <div id="screen-game" class="hidden">
-        <div id="cat-badge" class="hidden"></div> <div id="role-tag" style="font-size:0.7rem; font-weight:bold; margin-bottom:5px;"></div>
+        <div id="cat-badge" class="hidden"></div>
+        <div id="role-tag" style="font-size:0.7rem; font-weight:bold; margin-bottom:5px;"></div>
         <h2 id="question"></h2>
         <div id="rank-list"></div>
         <button id="submit" class="btn-main" onclick="sendOrder()">Lock My Order</button>
     </div>
 
     <div id="screen-results" class="hidden">
-        <h2>Connection Strength</h2>
+        <h2>Results</h2>
         <div id="result-list"></div>
         <div id="controls"></div>
     </div>
@@ -130,15 +137,16 @@
 <script>
 let bank=null, peer, conn, role, idx=0, max=10, mode="romance", truth=null, locked=false;
 let scores={host:0, guest:0}, deck=[], currentDesigner="host";
+let swapTurnPending = false; 
 
 async function initGame() {
     try {
         const res = await fetch('questions.json');
         bank = await res.json();
-        const hb = document.getElementById("host-btn");
-        hb.disabled = false; hb.innerText = "Host Game";
+        document.getElementById("host-btn").disabled = false;
+        document.getElementById("host-btn").innerText = "Host Game";
         document.getElementById("status").innerText = "Ready";
-    } catch(e) { document.getElementById("status").innerText = "Failed to load questions.json"; }
+    } catch(e) { document.getElementById("status").innerText = "Data Load Error"; }
 }
 
 function show(id) { 
@@ -153,21 +161,20 @@ function toggleCustomBtn() {
 
 function startHost() {
     mode = document.getElementById("mode-select").value;
-    if(mode === "custom") return show("screen-custom");
+    if(mode === "custom") {
+        swapTurnPending = false;
+        document.getElementById("custom-title").innerText = "Host Sets Question";
+        return show("screen-custom");
+    }
     max = parseInt(document.getElementById("round-select").value);
-    
+    initPoolAndPeer();
+}
+
+function initPoolAndPeer() {
     let pool = [];
     if(mode === 'chaos') {
-        // Tag each question with its category before shuffling
-        Object.keys(bank).forEach(cat => {
-            bank[cat].forEach(qObj => {
-                pool.push({...qObj, category: cat});
-            });
-        });
-    } else {
-        pool = [...bank[mode]];
-    }
-    
+        Object.keys(bank).forEach(cat => bank[cat].forEach(qObj => pool.push({...qObj, category: cat})));
+    } else { pool = [...bank[mode]]; }
     deck = pool.sort(() => Math.random() - 0.5).slice(0, max);
     initPeer();
 }
@@ -176,8 +183,21 @@ function saveCustomAndHost() {
     const q = document.getElementById("custom-q").value;
     const opts = [...document.querySelectorAll(".custom-opt")].map(i=>i.value).filter(v=>v.trim());
     if(!q || opts.length < 2) return alert("Needs a question + 2 options!");
-    deck = [{q, opts, category: "custom"}]; max = 1; mode = "custom";
-    initPeer();
+    
+    deck = [{q, opts, category: "custom"}];
+    
+    if (swapTurnPending) {
+        idx = 1; max = 2; // Index 1 belongs to Guest
+        deck = [deck[0], deck[0]]; // Clone so guest can access index 1
+        conn.send({type:"START", mode, max, deck, i:idx});
+        round();
+    } else {
+        idx = 0; max = 1;
+        if(conn && conn.open) {
+            conn.send({type:"START", mode, max, deck, i:0});
+            round();
+        } else { initPeer(); }
+    }
 }
 
 function initPeer() {
@@ -218,16 +238,11 @@ function updatePoints() {
 function round() {
     truth = null; locked = false;
     currentDesigner = (idx % 2 === 0) ? "host" : "guest";
-    
-    // CHAOS MODE: Show category badge
     const badge = document.getElementById("cat-badge");
     if (mode === "chaos" && deck[idx].category) {
         badge.innerText = `From: ${deck[idx].category}`;
         badge.classList.remove("hidden");
-    } else {
-        badge.classList.add("hidden");
-    }
-
+    } else { badge.classList.add("hidden"); }
     document.getElementById("question").innerText = deck[idx].q;
     render(deck[idx].opts, (role !== currentDesigner));
     ui(); show("screen-game");
@@ -243,7 +258,7 @@ function render(opts, isWait) {
 
 function ui() {
     const isCr = (role === currentDesigner);
-    document.getElementById("role-tag").innerText = isCr ? "⭐ YOUR TURN" : (truth ? "🔍 GUESS" : "⌛ WAITING...");
+    document.getElementById("role-tag").innerText = isCr ? "⭐ SET THE TRUTH" : (truth ? "🔍 YOUR GUESS" : "⌛ WAITING...");
     document.getElementById("submit").classList.toggle("hidden", !isCr && !truth);
 }
 
@@ -274,7 +289,7 @@ function reveal(t, g) {
 }
 
 function showFinal() {
-    const win = (scores.host > scores.guest) ? "HOST WINS" : (scores.guest > scores.host ? "GUEST WINS" : "TIE");
+    const win = (scores.host > scores.guest) ? "HOST WINS 🥀" : (scores.guest > scores.host ? "GUEST WINS 🥀" : "SOUL BOUND 🤝");
     document.getElementById("winner-text").innerText = win;
     document.getElementById("final-stats").innerHTML = `<p>Host: ${scores.host} | Guest: ${scores.guest}</p>`;
     
@@ -283,30 +298,35 @@ function showFinal() {
         const btnNext = document.createElement("button"); btnNext.className="btn-main";
         btnNext.innerText = "Play Again";
         btnNext.onclick = () => {
-            idx = 0;
-            if(mode === "custom") { deck = [deck[0]]; max = 1; }
-            else if(mode === "chaos") { startHost(); } // Re-run chaos setup to get new categories
-            else { deck = [...bank[mode]].sort(()=>Math.random()-.5).slice(0, max); }
-            conn.send({type:"START", mode, max, deck, i:0}); round();
+            if(mode === "custom") {
+                swapTurnPending = false;
+                document.getElementById("custom-title").innerText = "Host Sets Question";
+                show("screen-custom");
+            } else {
+                idx = 0;
+                initPoolAndPeer(); 
+                conn.send({type:"START", mode, max, deck, i:0}); round();
+            }
         };
         const btnSwap = document.createElement("button"); btnSwap.className="btn-alt";
         btnSwap.innerText = "Swap: Guest Starts";
         btnSwap.onclick = () => {
-            idx = 1; max = (mode === "custom") ? 2 : max;
-            if(mode === "custom") deck = [deck[0], deck[0]];
-            conn.send({type:"START", mode, max, deck, i:idx}); round();
+            if(mode === "custom") {
+                swapTurnPending = true;
+                document.getElementById("custom-title").innerText = "Create for Guest";
+                show("screen-custom");
+            } else {
+                idx = 1; 
+                conn.send({type:"START", mode, max, deck, i:idx}); round();
+            }
         };
         ctrl.appendChild(btnNext); ctrl.appendChild(btnSwap);
     }
     show("screen-final");
 }
 
-// Simple Drag & Drop
 let active = null;
-document.addEventListener("pointerdown", e => { 
-    active = e.target.closest(".rank-item"); 
-    if(active && !locked) active.classList.add("active"); 
-});
+document.addEventListener("pointerdown", e => { active = e.target.closest(".rank-item"); if(active && !locked) active.classList.add("active"); });
 document.addEventListener("pointermove", e => {
     if(!active || locked) return;
     const target = document.elementFromPoint(e.clientX, e.clientY)?.closest(".rank-item");
