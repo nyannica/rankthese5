@@ -291,7 +291,14 @@ function saveCustomAndHost() {
     
     deck = [{ q, opts }];
     max = 1; 
-    initPeer();
+    
+    if (conn && conn.open) {
+        // If already connected, just start the custom game
+        conn.send({ type: "START", mode: "custom", max: 1, deck });
+        round();
+    } else {
+        initPeer();
+    }
 }
 
 function initPeer() {
@@ -318,7 +325,7 @@ function setup() {
     });
     conn.on("data", d => {
         if(d.type === "READY" && role === "host") { conn.send({ type: "START", mode, max, deck }); round(); }
-        if(d.type === "START") { mode = d.mode; max = d.max; deck = d.deck; round(); }
+        if(d.type === "START") { mode = d.mode; max = d.max; deck = d.deck; idx = d.i || 0; round(); }
         if(d.type === "TRUTH") { truth = d.order; ui(); render(deck[idx].opts, false); }
         if(d.type === "GUESS") { reveal(truth, d.order); }
         if(d.type === "NEXT") { idx = d.i; (idx >= max) ? showFinalScore() : round(); }
@@ -346,9 +353,11 @@ function round() {
 function replay() {
     locked = false; 
     const btn = document.getElementById("submit");
-    btn.disabled = false;
-    btn.innerText = "Lock My Order";
-    btn.classList.remove("hidden");
+    if (btn) {
+        btn.disabled = false;
+        btn.innerText = "Lock My Order";
+        btn.classList.remove("hidden");
+    }
 
     document.getElementById("question").innerText = deck[idx].q;
     document.getElementById("round-info").innerText = `Step ${idx + 1} of ${max}`;
@@ -479,27 +488,49 @@ function showFinalScore() {
     if (role === "host") {
         let btnNext = document.createElement("button");
         btnNext.className = "btn-main";
-        btnNext.innerText = "Next Round (Same Mode)";
+        btnNext.innerText = (mode === "custom") ? "Restart Custom Question" : "Next Round (Same Mode)";
         btnNext.onclick = () => {
             idx = 0;
-            let pool = (mode === 'chaos') ? [].concat(...Object.values(bank)) : [...bank[mode]];
-            deck = shuffle(pool).slice(0, max);
-            conn.send({ type: "START", mode, max, deck });
+            if (mode !== "custom") {
+                let pool = (mode === 'chaos') ? [].concat(...Object.values(bank)) : [...bank[mode]];
+                deck = shuffle(pool).slice(0, max);
+            }
+            conn.send({ type: "START", mode, max, deck, i: 0 });
             round();
         };
         controls.appendChild(btnNext);
 
         let btnSwap = document.createElement("button");
         btnSwap.className = "btn-alt";
-        btnSwap.innerText = "Give Guest Turn 1";
+        btnSwap.innerText = (mode === "custom") ? "Guest Sets Truth First" : "Give Guest Turn 1";
         btnSwap.onclick = () => {
-            idx = 1; 
-            let pool = (mode === 'chaos') ? [].concat(...Object.values(bank)) : [...bank[mode]];
-            deck = shuffle(pool).slice(0, max);
-            conn.send({ type: "START", mode, max, deck });
+            // For custom mode with 1 question, we use idx=1 to toggle designer to Guest
+            // but we must make sure max is set to accommodate the index
+            let startIdx = 1;
+            let tempMax = (mode === "custom") ? 2 : max; 
+            
+            // Re-copy question for custom swap so index 1 exists
+            if (mode === "custom") {
+                deck = [deck[0], deck[0]];
+            } else {
+                let pool = (mode === 'chaos') ? [].concat(...Object.values(bank)) : [...bank[mode]];
+                deck = shuffle(pool).slice(0, max);
+            }
+
+            conn.send({ type: "START", mode, max: tempMax, deck, i: startIdx });
+            idx = startIdx;
+            max = tempMax;
             round();
         };
         controls.appendChild(btnSwap);
+
+        if (mode === "custom") {
+            let btnNew = document.createElement("button");
+            btnNew.className = "btn-outline";
+            btnNew.innerText = "Design New Question";
+            btnNew.onclick = () => show("screen-custom");
+            controls.appendChild(btnNew);
+        }
     } else {
         controls.innerHTML = "<p style='font-size:0.8rem; opacity:0.6;'>Waiting for Host...</p>";
     }
