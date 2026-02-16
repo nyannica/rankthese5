@@ -33,24 +33,21 @@
         .btn-alt { background: linear-gradient(45deg, var(--p2), #4a044e); }
         .btn-outline { background: transparent; border: 1px solid var(--p1); color: var(--accent); }
         
-        /* Unified styling for Category, Rounds, and Partner Code */
         input, select { 
             width:100%; padding:14px; margin-bottom:12px; border-radius:15px; 
             background:#000000; color:var(--accent); border:1px solid #4c0519; 
             box-sizing:border-box; font-size:1rem; text-align: center;
+            text-align-last: center; /* Ensures dropdown text is centered on mobile */
             font-family: 'Georgia', serif;
+            appearance: none; /* Removes default arrows for cleaner centering */
         }
 
-        /* Matches the text color and placeholder of the dropdowns */
         #join-id {
             margin-top: 15px;
             text-transform: uppercase;
             color: var(--accent) !important; 
         }
-        #join-id::placeholder {
-            color: var(--accent);
-            opacity: 0.7;
-        }
+        #join-id::placeholder { color: var(--accent); opacity: 0.6; }
 
         .rank-item { 
             background: rgba(76, 5, 25, 0.3); padding:16px; border-radius:15px; 
@@ -107,12 +104,12 @@
             <input class="custom-opt" placeholder="Option 4">
             <input class="custom-opt" placeholder="Option 5">
         </div>
-        <button class="btn-main" onclick="saveCustomAndHost()">Begin Game</button>
+        <button id="custom-submit-btn" class="btn-main" onclick="saveCustomAndHost()">Begin Game</button>
         <button class="btn-outline" onclick="show('screen-start')">Back</button>
     </div>
 
     <div id="screen-wait" class="hidden">
-        <p>Waiting for Partner...</p>
+        <p id="wait-msg">Waiting for Partner...</p>
         <h1 id="room-id" style="font-size:3rem; color:var(--p1);">----</h1>
     </div>
 
@@ -141,7 +138,6 @@
 <script>
 let bank=null, peer, conn, role, idx=0, max=10, mode="romance", truth=null, locked=false;
 let scores={host:0, guest:0}, deck=[], currentDesigner="host";
-let swapTurnPending = false; 
 
 async function initGame() {
     try {
@@ -166,7 +162,6 @@ function toggleCustomBtn() {
 function startHost() {
     mode = document.getElementById("mode-select").value;
     if(mode === "custom") {
-        swapTurnPending = false;
         document.getElementById("custom-title").innerText = "Host Sets Question";
         return show("screen-custom");
     }
@@ -188,21 +183,31 @@ function saveCustomAndHost() {
     const opts = [...document.querySelectorAll(".custom-opt")].map(i=>i.value).filter(v=>v.trim());
     if(!q || opts.length < 2) return alert("Needs a question + at least 2 options!");
     
-    deck = [{q, opts, category: "custom"}];
+    const newDeck = [{q, opts, category: "custom"}];
     
-    if (swapTurnPending) {
-        idx = 1; max = 2; // Index 1 ensures Guest starts (Designer logic: odd=Guest)
-        deck = [deck[0], deck[0]]; 
-        conn.send({type:"START", mode, max, deck, i:idx});
-        round();
+    if (role === "guest") {
+        // Guest finished creating, send back to Host
+        conn.send({type: "GUEST_CUSTOM_READY", deck: newDeck});
+        document.getElementById("status").innerText = "Question Sent!";
+        show("screen-wait");
+        document.getElementById("wait-msg").innerText = "Host is starting the round...";
     } else {
-        idx = 0; max = 1;
+        // Host is creating
+        if (idx === 1) { // If it's meant for Guest to set truth
+            deck = [newDeck[0], newDeck[0]];
+            max = 2;
+        } else {
+            deck = newDeck;
+            max = 1;
+            idx = 0;
+        }
+        
         if(conn && conn.open) {
-            conn.send({type:"START", mode, max, deck, i:0});
+            conn.send({type:"START", mode, max, deck, i: idx});
             round();
         } else { initPeer(); }
     }
-    // Clear inputs
+    // Cleanup
     document.getElementById("custom-q").value = "";
     document.querySelectorAll(".custom-opt").forEach(i => i.value = "");
 }
@@ -235,6 +240,18 @@ function setupConn() {
         if(d.type === "GUESS") reveal(truth, d.order);
         if(d.type === "NEXT") { idx=d.i; (idx >= max) ? showFinal() : round(); }
         if(d.type === "SYNC") { scores=d.scores; updatePoints(); }
+        
+        // Custom Mode Logic
+        if(d.type === "REQUEST_CUSTOM_GUEST") {
+            document.getElementById("custom-title").innerText = "Guest Sets Question";
+            show("screen-custom");
+        }
+        if(d.type === "GUEST_CUSTOM_READY") {
+            deck = [d.deck[0], d.deck[0]]; // Duplicate for index 1 logic
+            idx = 1; max = 2;
+            conn.send({type:"START", mode, max, deck, i: 1});
+            round();
+        }
     });
 }
 
@@ -307,12 +324,10 @@ function showFinal() {
         btnNext.innerText = (mode === "custom") ? "Host Sets New" : "Play Again";
         btnNext.onclick = () => {
             if(mode === "custom") {
-                swapTurnPending = false;
-                document.getElementById("custom-title").innerText = "Host Sets Question";
+                idx = 0; document.getElementById("custom-title").innerText = "Host Sets Question";
                 show("screen-custom");
             } else {
-                idx = 0;
-                initPoolAndPeer(); 
+                idx = 0; initPoolAndPeer(); 
                 conn.send({type:"START", mode, max, deck, i:0}); round();
             }
         };
@@ -320,12 +335,11 @@ function showFinal() {
         btnSwap.innerText = (mode === "custom") ? "Guest Sets New" : "Swap: Guest Starts";
         btnSwap.onclick = () => {
             if(mode === "custom") {
-                swapTurnPending = true;
-                document.getElementById("custom-title").innerText = "Create for Guest";
-                show("screen-custom");
+                conn.send({type: "REQUEST_CUSTOM_GUEST"});
+                document.getElementById("wait-msg").innerText = "Waiting for Guest to create...";
+                show("screen-wait");
             } else {
-                idx = 1; 
-                conn.send({type:"START", mode, max, deck, i:idx}); round();
+                idx = 1; conn.send({type:"START", mode, max, deck, i:idx}); round();
             }
         };
         ctrl.appendChild(btnNext); ctrl.appendChild(btnSwap);
@@ -333,7 +347,6 @@ function showFinal() {
     show("screen-final");
 }
 
-// Simple Drag & Drop
 let active = null;
 document.addEventListener("pointerdown", e => { active = e.target.closest(".rank-item"); if(active && !locked) active.classList.add("active"); });
 document.addEventListener("pointermove", e => {
