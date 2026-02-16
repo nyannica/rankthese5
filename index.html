@@ -23,6 +23,7 @@
         }
         h1 { font-style: italic; color: var(--accent); }
         .hidden { display:none !important; }
+        
         button { 
             width:100%; padding:1.1rem; border:none; border-radius:100px; 
             font-weight:bold; cursor:pointer; margin-top:12px; transition:0.3s; 
@@ -32,21 +33,24 @@
         .btn-alt { background: linear-gradient(45deg, var(--p2), #4a044e); }
         .btn-outline { background: transparent; border: 1px solid var(--p1); color: var(--accent); }
         
+        /* Unified styling for Category, Rounds, and Partner Code */
         input, select { 
             width:100%; padding:14px; margin-bottom:12px; border-radius:15px; 
             background:#000000; color:var(--accent); border:1px solid #4c0519; 
-            text-align: center; font-size: 1rem;
+            box-sizing:border-box; font-size:1rem; text-align: center;
+            font-family: 'Georgia', serif;
         }
-        /* Fixed Partner Code Field */
+
+        /* Matches the text color and placeholder of the dropdowns */
         #join-id {
-            border: 2px solid var(--p1);
-            background: rgba(190, 18, 60, 0.1);
-            letter-spacing: 4px;
-            font-weight: bold;
-            color: white;
-            margin-top: 20px;
+            margin-top: 15px;
+            text-transform: uppercase;
+            color: var(--accent) !important; 
         }
-        #join-id::placeholder { letter-spacing: normal; font-weight: normal; color: rgba(255,255,255,0.4); }
+        #join-id::placeholder {
+            color: var(--accent);
+            opacity: 0.7;
+        }
 
         .rank-item { 
             background: rgba(76, 5, 25, 0.3); padding:16px; border-radius:15px; 
@@ -95,7 +99,7 @@
 
     <div id="screen-custom" class="hidden">
         <h2 id="custom-title">Create Question</h2>
-        <input id="custom-q" placeholder="The Question?">
+        <input id="custom-q" placeholder="Enter Question Here">
         <div id="custom-opts">
             <input class="custom-opt" placeholder="Option 1">
             <input class="custom-opt" placeholder="Option 2">
@@ -182,13 +186,13 @@ function initPoolAndPeer() {
 function saveCustomAndHost() {
     const q = document.getElementById("custom-q").value;
     const opts = [...document.querySelectorAll(".custom-opt")].map(i=>i.value).filter(v=>v.trim());
-    if(!q || opts.length < 2) return alert("Needs a question + 2 options!");
+    if(!q || opts.length < 2) return alert("Needs a question + at least 2 options!");
     
     deck = [{q, opts, category: "custom"}];
     
     if (swapTurnPending) {
-        idx = 1; max = 2; // Index 1 belongs to Guest
-        deck = [deck[0], deck[0]]; // Clone so guest can access index 1
+        idx = 1; max = 2; // Index 1 ensures Guest starts (Designer logic: odd=Guest)
+        deck = [deck[0], deck[0]]; 
         conn.send({type:"START", mode, max, deck, i:idx});
         round();
     } else {
@@ -198,6 +202,9 @@ function saveCustomAndHost() {
             round();
         } else { initPeer(); }
     }
+    // Clear inputs
+    document.getElementById("custom-q").value = "";
+    document.querySelectorAll(".custom-opt").forEach(i => i.value = "");
 }
 
 function initPeer() {
@@ -211,6 +218,7 @@ function startJoin() {
     peer = new Peer(); role = "guest";
     peer.on('open', () => {
         const id = document.getElementById("join-id").value;
+        if(!id) return alert("Enter a partner code!");
         conn = peer.connect(id); setupConn();
     });
 }
@@ -296,7 +304,7 @@ function showFinal() {
     const ctrl = document.getElementById("post-game-controls"); ctrl.innerHTML = "";
     if(role === "host") {
         const btnNext = document.createElement("button"); btnNext.className="btn-main";
-        btnNext.innerText = "Play Again";
+        btnNext.innerText = (mode === "custom") ? "Host Sets New" : "Play Again";
         btnNext.onclick = () => {
             if(mode === "custom") {
                 swapTurnPending = false;
@@ -309,7 +317,7 @@ function showFinal() {
             }
         };
         const btnSwap = document.createElement("button"); btnSwap.className="btn-alt";
-        btnSwap.innerText = "Swap: Guest Starts";
+        btnSwap.innerText = (mode === "custom") ? "Guest Sets New" : "Swap: Guest Starts";
         btnSwap.onclick = () => {
             if(mode === "custom") {
                 swapTurnPending = true;
@@ -325,6 +333,7 @@ function showFinal() {
     show("screen-final");
 }
 
+// Simple Drag & Drop
 let active = null;
 document.addEventListener("pointerdown", e => { active = e.target.closest(".rank-item"); if(active && !locked) active.classList.add("active"); });
 document.addEventListener("pointermove", e => {
