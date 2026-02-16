@@ -7,186 +7,73 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { 
-            --p1: #be123c; /* Rose Red */
-            --p2: #701a75; /* Deep Velvet */
-            --bg: #0a0505; /* Obsidian */
-            --card: #1a0b0b; /* Dark Chocolate/Wine */
-            --text: #ffe4e6; /* Soft Pink Text */
-            --success: #f43f5e; /* Bright Rose */
-            --near: #fb7185; /* Soft Petal */
-            --skip: #4c0519; /* Dried Rose */
-            --accent: #fda4af; 
+            --p1: #be123c; --p2: #701a75; --bg: #0a0505; --card: #1a0b0b; 
+            --text: #ffe4e6; --success: #f43f5e; --near: #fb7185; --skip: #4c0519; --accent: #fda4af; 
         }
-        
         body { 
-            margin:0; 
-            font-family: 'Georgia', serif; 
-            background: var(--bg); 
+            margin:0; font-family: 'Georgia', serif; background: var(--bg); 
             background-image: radial-gradient(circle at center, #2d0606 0%, #0a0505 100%);
-            color:var(--text); 
-            display:flex; 
-            justify-content:center; 
-            align-items:center; 
-            min-height:100vh; 
-            padding:1rem; 
-            overflow:hidden;
-            touch-action: none; 
+            color:var(--text); display:flex; justify-content:center; align-items:center; 
+            min-height:100vh; padding:1rem; overflow:hidden; touch-action: none; 
         }
-
-        body::before {
-            content: "♥";
-            position: fixed;
-            top: -10%;
-            left: 10%;
-            font-size: 2rem;
-            color: rgba(190, 18, 60, 0.1);
-            animation: float 15s infinite linear;
-            z-index: -1;
-        }
-
-        @keyframes float {
-            0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
-            50% { opacity: 0.5; }
-            100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
-        }
-
         .container { 
-            max-width:480px;
-            width:100%; 
-            background:var(--card); 
-            padding:2rem; 
-            border-radius:32px; 
-            text-align:center; 
-            box-shadow: 0 0 30px rgba(190, 18, 60, 0.2), inset 0 0 15px rgba(0,0,0,0.5);
-            border: 1px solid rgba(190, 18, 60, 0.3);
-            max-height:95vh; 
-            overflow-y:auto; 
-            position: relative;
+            max-width:480px; width:100%; background:var(--card); padding:2rem; 
+            border-radius:32px; text-align:center; box-shadow: 0 0 30px rgba(190, 18, 60, 0.2);
+            border: 1px solid rgba(190, 18, 60, 0.3); max-height:95vh; overflow-y:auto; 
         }
-
-        h1 { font-style: italic; color: var(--accent); text-shadow: 0 0 10px rgba(244, 63, 94, 0.5); }
+        h1 { font-style: italic; color: var(--accent); }
         .hidden { display:none !important; }
-
         button { 
-            width:100%;
-            padding:1.1rem; 
-            border:none; 
-            border-radius:100px; 
-            font-weight:bold; 
-            cursor:pointer; 
-            margin-top:12px; 
-            transition:0.3s; 
-            font-size:1rem; 
-            color:white; 
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            width:100%; padding:1.1rem; border:none; border-radius:100px; 
+            font-weight:bold; cursor:pointer; margin-top:12px; transition:0.3s; 
+            font-size:1rem; color:white; text-transform: uppercase;
         }
-
-        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
-        button:disabled { opacity: 0.4; transform: none; }
-
-        .btn-main { background: linear-gradient(45deg, var(--p1), #881337); box-shadow: 0 4px 15px rgba(190, 18, 60, 0.4); }
+        .btn-main { background: linear-gradient(45deg, var(--p1), #881337); }
         .btn-alt { background: linear-gradient(45deg, var(--p2), #4a044e); }
         .btn-outline { background: transparent; border: 1px solid var(--p1); color: var(--accent); }
-        .btn-skip { background: transparent; color: var(--skip); border: 1px solid var(--skip); font-size: 0.7rem; margin-top: 20px; }
-
         input, select { 
-            width:100%;
-            padding:14px; 
-            margin-bottom:12px; 
-            border-radius:15px; 
-            background:#000000; 
-            color:var(--accent); 
-            border:1px solid #4c0519; 
-            box-sizing:border-box; 
-            font-size:1rem;
+            width:100%; padding:14px; margin-bottom:12px; border-radius:15px; 
+            background:#000000; color:var(--accent); border:1px solid #4c0519; 
         }
-
-        #rank-list { margin:1.5rem 0; display:flex; flex-direction:column; gap:10px; }
-        
         .rank-item { 
-            background: rgba(76, 5, 25, 0.3);
-            padding:16px; 
-            border-radius:15px; 
-            cursor:grab; 
-            text-align:left; 
-            user-select:none; 
-            display:flex; 
-            align-items:center; 
-            border:1px solid rgba(190, 18, 60, 0.2); 
-            font-size:0.95rem;
-            touch-action: none; 
-            transition: background 0.2s;
+            background: rgba(76, 5, 25, 0.3); padding:16px; border-radius:15px; 
+            cursor:grab; text-align:left; margin-bottom:10px; border:1px solid rgba(190, 18, 60, 0.2);
         }
-        
-        .rank-item::before { content:"❤"; margin-right:12px; color: var(--p1); opacity:0.6; font-size: 0.8rem; }
-        .rank-item.active { background:var(--p1); border-color: var(--accent); transform: scale(1.05); z-index: 10; }
-        .rank-preview { opacity: 0.4; cursor: default; pointer-events: none; border: 1px dashed var(--p1); }
-        
-        #live-points { 
-            background: rgba(0,0,0,0.5);
-            padding: 12px; 
-            border-radius: 50px; 
-            margin-bottom: 20px; 
-            display: flex; 
-            justify-content: space-around; 
-            border: 1px solid var(--p1); 
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-
-        .result-row { 
-            display: flex;
-            justify-content: space-between; 
-            padding: 12px; 
-            border-bottom: 1px solid rgba(190, 18, 60, 0.1); 
-            font-size: 0.9rem;
-        }
-
-        #steal-timer { font-size: 0.75rem; margin-top: 10px; color: var(--accent); font-style: italic; }
-        .winner-banner { 
-            font-size: 2.2rem;
-            margin: 20px 0; 
-            color: var(--accent); 
-            text-shadow: 0 0 20px var(--p1);
-        }
-        #status { font-size:0.6rem; color:var(--p1); margin-bottom:5px; text-transform:uppercase; font-weight: bold; letter-spacing: 1px;}
+        .rank-item.active { background:var(--p1); transform: scale(1.05); }
+        #live-points { display: flex; justify-content: space-around; margin-bottom: 20px; font-size: 0.8rem; }
+        .result-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="status">Initializing...</div>
+    <div id="status" style="font-size:0.6rem; color:var(--p1); margin-bottom:5px;">Initializing...</div>
     
     <div id="live-points" class="hidden">
-        <span id="p-host-score" style="color:var(--accent)">Host: 0</span>
-        <span id="p-guest-score" style="color:var(--p1)">Guest: 0</span>
+        <span id="p-host-score">Host: 0</span>
+        <span id="p-guest-score">Guest: 0</span>
     </div>
 
     <div id="screen-start">
-        <h1>DuoRanker: <i>Soulmates</i></h1>
+        <h1>DuoRanker</h1>
         <select id="mode-select" onchange="toggleCustomBtn()">
             <option value="romance">Romance 💖</option>
             <option value="personal">Compatibility 🏹</option>
-            <option value="gaming">Video Games 🎮</option>
-            <option value="travel">Travel & Adventure ✈️</option>
-            <option value="career">Career & Ambition 💼</option>
             <option value="chaos">🔥 CHAOS MODE</option>
             <option value="custom">✍️ CUSTOM QUESTIONS</option>
         </select>
         <select id="round-select">
-            <option value="5">Blitz (5 Rounds)</option>
-            <option value="10" selected>Standard (10 Rounds)</option>
-            <option value="20">Marathon (20 Rounds)</option>
+            <option value="5">5 Rounds</option>
+            <option value="10" selected>10 Rounds</option>
         </select>
-        <button id="host-btn" class="btn-main" onclick="startHost()" disabled>Loading Bank...</button>
+        <button id="host-btn" class="btn-main" onclick="startHost()" disabled>Loading...</button>
         <input id="join-id" placeholder="Partner Code" type="tel" style="margin-top:15px;">
         <button class="btn-outline" onclick="startJoin()">Join Game</button>
     </div>
 
     <div id="screen-custom" class="hidden">
-        <h1>Create Your Question</h1>
-        <input id="custom-q" placeholder="Enter your question...">
+        <h2>Custom Round</h2>
+        <input id="custom-q" placeholder="The Question (e.g. Best Pizza?)">
         <div id="custom-opts">
             <input class="custom-opt" placeholder="Option 1">
             <input class="custom-opt" placeholder="Option 2">
@@ -194,66 +81,48 @@
             <input class="custom-opt" placeholder="Option 4">
             <input class="custom-opt" placeholder="Option 5">
         </div>
-        <button class="btn-main" onclick="saveCustomAndHost()">Start Custom Game</button>
+        <button class="btn-main" onclick="saveCustomAndHost()">Begin Custom Game</button>
         <button class="btn-outline" onclick="show('screen-start')">Back</button>
     </div>
 
     <div id="screen-wait" class="hidden">
-        <p>Invite your partner</p>
-        <h1 id="room-id" style="font-size:3.5rem; color:var(--p1); margin:10px 0;">----</h1>
+        <p>Waiting for Partner...</p>
+        <h1 id="room-id" style="font-size:3rem; color:var(--p1);">----</h1>
     </div>
 
     <div id="screen-game" class="hidden">
-        <div id="role-tag" style="font-size:0.7rem; font-weight:900; letter-spacing:1px; margin-bottom:5px;"></div>
-        <h2 id="question" style="font-size:1.1rem; margin:10px 0;"></h2>
+        <div id="role-tag" style="font-size:0.7rem; font-weight:bold; margin-bottom:5px;"></div>
+        <h2 id="question"></h2>
         <div id="rank-list"></div>
         <button id="submit" class="btn-main" onclick="sendOrder()">Lock My Order</button>
-        <button id="skip-btn" class="btn-skip" onclick="requestSkip()">Skip Question ⏭️</button>
-        <p id="round-info" style="font-size:0.7rem; color:var(--near); margin-top:10px;"></p>
     </div>
 
     <div id="screen-results" class="hidden">
-        <h2 id="res-title">The Connection</h2>
-        <div id="result-list" style="margin: 15px 0;"></div>
+        <h2>Connection Strength</h2>
+        <div id="result-list"></div>
         <div id="controls"></div>
-        <div id="steal-timer"></div>
     </div>
 
     <div id="screen-final" class="hidden">
-        <h1>Fate Decided</h1>
-        <div class="winner-banner" id="winner-text"></div>
-        <div id="final-stats" style="margin-bottom: 20px;"></div>
+        <h1 id="winner-text"></h1>
+        <div id="final-stats"></div>
         <div id="post-game-controls"></div>
-        <button class="btn-outline" style="margin-top:20px" onclick="location.reload()">Exit to Menu</button>
+        <button class="btn-outline" style="margin-top:20px" onclick="location.reload()">Exit</button>
     </div>
 </div>
 
 <script>
-let bank = null; 
-let peer, conn, role, idx=0, max=10, mode="romance", truth=null, locked=false;
-let scores = { host: 0, guest: 0 }, deck = [], currentDesigner="host";
-let stealInterval;
+let bank=null, peer, conn, role, idx=0, max=10, mode="romance", truth=null, locked=false;
+let scores={host:0, guest:0}, deck=[], currentDesigner="host";
 
 async function initGame() {
     try {
-        const response = await fetch('questions.json');
-        bank = await response.json();
-        document.getElementById("status").innerText = "Ready to Begin";
-        const hBtn = document.getElementById("host-btn");
-        hBtn.disabled = false;
-        hBtn.innerText = "Host Connection";
-    } catch (e) {
-        document.getElementById("status").innerText = "Error Loading Questions";
-        console.error("Could not load questions.json", e);
-    }
-}
-
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
+        const res = await fetch('questions.json');
+        bank = await res.json();
+        const hb = document.getElementById("host-btn");
+        hb.disabled = false; hb.innerText = "Host Game";
+        document.getElementById("status").innerText = "Ready";
+    } catch(e) { document.getElementById("status").innerText = "Failed to load questions.json"; }
 }
 
 function show(id) { 
@@ -262,80 +131,54 @@ function show(id) {
 }
 
 function toggleCustomBtn() {
-    const modeVal = document.getElementById("mode-select").value;
-    const hostBtn = document.getElementById("host-btn");
-    hostBtn.innerText = (modeVal === "custom") ? "Design Question" : "Host Connection";
+    const isCustom = document.getElementById("mode-select").value === "custom";
+    document.getElementById("host-btn").innerText = isCustom ? "Create Question" : "Host Game";
 }
 
 function startHost() {
-    if(!bank) return;
     mode = document.getElementById("mode-select").value;
-    
-    if(mode === "custom") {
-        show("screen-custom");
-        return;
-    }
-
+    if(mode === "custom") return show("screen-custom");
     max = parseInt(document.getElementById("round-select").value);
     let pool = (mode === 'chaos') ? [].concat(...Object.values(bank)) : [...bank[mode]];
-    deck = shuffle(pool).slice(0, max);
+    deck = pool.sort(() => Math.random() - 0.5).slice(0, max);
     initPeer();
 }
 
 function saveCustomAndHost() {
     const q = document.getElementById("custom-q").value;
-    const optInputs = document.querySelectorAll(".custom-opt");
-    const opts = Array.from(optInputs).map(i => i.value).filter(v => v.trim() !== "");
-    
-    if(!q || opts.length < 2) return alert("Please enter a question and at least 2 options!");
-    
-    deck = [{ q, opts }];
-    max = 1; 
-    
-    if (conn && conn.open) {
-        // If already connected, just start the custom game
-        conn.send({ type: "START", mode: "custom", max: 1, deck });
-        round();
-    } else {
-        initPeer();
-    }
+    const opts = [...document.querySelectorAll(".custom-opt")].map(i=>i.value).filter(v=>v.trim());
+    if(!q || opts.length < 2) return alert("Needs a question + 2 options!");
+    deck = [{q, opts}]; max = 1; mode = "custom";
+    initPeer();
 }
 
 function initPeer() {
-    peer = new Peer(Math.floor(1000 + Math.random() * 9000) + ""); 
+    peer = new Peer(Math.floor(1000 + Math.random()*9000));
     role = "host";
-    peer.on("open", id => { document.getElementById("room-id").innerText = id; show("screen-wait"); });
-    peer.on("connection", c => { conn = c; setup(); });
+    peer.on('open', id => { document.getElementById("room-id").innerText=id; show("screen-wait"); });
+    peer.on('connection', c => { conn = c; setupConn(); });
 }
 
 function startJoin() {
     peer = new Peer(); role = "guest";
-    peer.on("open", () => { 
+    peer.on('open', () => {
         const id = document.getElementById("join-id").value;
-        if(!id) return alert("Enter a code!");
-        conn = peer.connect(id); setup(); 
+        conn = peer.connect(id); setupConn();
     });
 }
 
-function setup() {
-    conn.on("open", () => { 
-        document.getElementById("status").innerText = "Connection Live";
+function setupConn() {
+    conn.on('open', () => {
         document.getElementById("live-points").classList.remove("hidden");
-        if(role === "guest") conn.send({ type: "READY" }); 
+        if(role === "guest") conn.send({type:"READY"});
     });
-    conn.on("data", d => {
-        if(d.type === "READY" && role === "host") { conn.send({ type: "START", mode, max, deck }); round(); }
-        if(d.type === "START") { mode = d.mode; max = d.max; deck = d.deck; idx = d.i || 0; round(); }
-        if(d.type === "TRUTH") { truth = d.order; ui(); render(deck[idx].opts, false); }
-        if(d.type === "GUESS") { reveal(truth, d.order); }
-        if(d.type === "NEXT") { idx = d.i; (idx >= max) ? showFinalScore() : round(); }
-        if(d.type === "SYNC_SCORE") { scores = d.scores; updatePoints(); }
-        if(d.type === "STEAL") { 
-            clearInterval(stealInterval);
-            currentDesigner = (role === "host") ? "guest" : "host"; 
-            replay(); 
-        }
-        if(d.type === "SKIP") { handleSkip(); }
+    conn.on('data', d => {
+        if(d.type === "READY") { conn.send({type:"START", mode, max, deck, i:0}); round(); }
+        if(d.type === "START") { mode=d.mode; max=d.max; deck=d.deck; idx=d.i; round(); }
+        if(d.type === "TRUTH") { truth=d.order; ui(); render(deck[idx].opts, false); }
+        if(d.type === "GUESS") reveal(truth, d.order);
+        if(d.type === "NEXT") { idx=d.i; (idx >= max) ? showFinal() : round(); }
+        if(d.type === "SYNC") { scores=d.scores; updatePoints(); }
     });
 }
 
@@ -347,227 +190,90 @@ function updatePoints() {
 function round() {
     truth = null; locked = false;
     currentDesigner = (idx % 2 === 0) ? "host" : "guest";
-    replay();
+    document.getElementById("question").innerText = deck[idx].q;
+    render(deck[idx].opts, (role !== currentDesigner));
+    ui(); show("screen-game");
 }
 
-function replay() {
-    locked = false; 
-    const btn = document.getElementById("submit");
-    if (btn) {
-        btn.disabled = false;
-        btn.innerText = "Lock My Order";
-        btn.classList.remove("hidden");
-    }
-
-    document.getElementById("question").innerText = deck[idx].q;
-    document.getElementById("round-info").innerText = `Step ${idx + 1} of ${max}`;
-    const isGuesserWaiting = (role !== currentDesigner && !truth);
-    render(deck[idx].opts, isGuesserWaiting);
-    ui(); show("screen-game");
+function render(opts, isWait) {
+    const rl = document.getElementById("rank-list"); rl.innerHTML = "";
+    opts.forEach(t => {
+        const d = document.createElement("div"); d.className = "rank-item";
+        d.innerText = t; rl.appendChild(d);
+    });
 }
 
 function ui() {
     const isCr = (role === currentDesigner);
-    const tag = document.getElementById("role-tag");
-    tag.innerText = isCr ? "⭐ SET YOUR TRUTH" : (truth ? "🔍 GUESS THEIR TRUTH" : "⌛ PREVIEWING OPTIONS...");
-    tag.style.color = isCr ? "var(--accent)" : "var(--p1)";
+    document.getElementById("role-tag").innerText = isCr ? "⭐ YOUR TURN" : (truth ? "🔍 GUESS" : "⌛ WAITING...");
     document.getElementById("submit").classList.toggle("hidden", !isCr && !truth);
-    document.getElementById("skip-btn").classList.toggle("hidden", !isCr && !truth);
-}
-
-function render(opts, isPreview) {
-    const rl = document.getElementById("rank-list"); rl.innerHTML = "";
-    opts.forEach(t => {
-        const d = document.createElement("div");
-        d.className = "rank-item" + (isPreview ? " rank-preview" : "");
-        d.innerText = t;
-        rl.appendChild(d);
-    });
-}
-
-function requestSkip() {
-    if(confirm("Abandon this thought? No points awarded.")) {
-        conn.send({ type: "SKIP" });
-        handleSkip();
-    }
-}
-
-function handleSkip() {
-    if(role === "host") {
-        idx++;
-        conn.send({type: "NEXT", i: idx});
-        (idx >= max) ? showFinalScore() : round();
-    } else {
-        document.getElementById("status").innerText = "Skipping...";
-    }
 }
 
 function sendOrder() {
-    const btn = document.getElementById("submit");
-    btn.innerText = "Order Locked ❤";
-    btn.disabled = true;
-    const order = [...document.querySelectorAll(".rank-item")].map(x => x.innerText);
-    locked = true; 
-    if(!truth) { 
-        truth = order;
-        conn.send({ type: "TRUTH", order }); 
-    }
-    else { 
-        conn.send({ type: "GUESS", order });
-        reveal(truth, order); 
-    }
+    const order = [...document.querySelectorAll(".rank-item")].map(x=>x.innerText);
+    locked = true; document.getElementById("submit").classList.add("hidden");
+    if(!truth) { truth=order; conn.send({type:"TRUTH", order}); }
+    else { conn.send({type:"GUESS", order}); reveal(truth, order); }
 }
 
 function reveal(t, g) {
-    clearInterval(stealInterval);
     const list = document.getElementById("result-list"); list.innerHTML = "";
     let pts = 0;
     t.forEach((x, i) => {
-        const actualPos = g.indexOf(x); const diff = Math.abs(i - actualPos);
+        const diff = Math.abs(i - g.indexOf(x));
         if(diff === 0) pts += 2; else if(diff === 1) pts += 1;
-        let div = document.createElement("div"); div.className = "result-row";
-        div.innerHTML = `<span>${x}</span><span style="color:${diff===0?'var(--success)':'var(--text)'}">Rank #${actualPos+1}</span>`;
-        list.appendChild(div);
+        list.innerHTML += `<div class="result-row"><span>${x}</span><span>Rank #${g.indexOf(x)+1}</span></div>`;
     });
     if(role === "host") { 
-        scores[(currentDesigner==='host'?'guest':'host')] += pts; 
-        conn.send({ type: "SYNC_SCORE", scores });
-        updatePoints(); 
-    }
-    
-    const ctrl = document.getElementById("controls"); ctrl.innerHTML = "";
-    const timerDisplay = document.getElementById("steal-timer");
-    timerDisplay.innerText = "";
-
-    if(role !== currentDesigner) {
-        let timeLeft = 5;
-        let b = document.createElement("button"); 
-        b.className="btn-alt"; b.id="btn-steal-action";
-        b.innerText=`🔄 Steal Turn (${timeLeft}s)`;
-        b.onclick = () => { conn.send({type:"STEAL"}); currentDesigner=role; replay(); };
-        ctrl.appendChild(b);
-        stealInterval = setInterval(() => {
-            timeLeft--;
-            if(timeLeft > 0) b.innerText = `🔄 Steal Turn (${timeLeft}s)`;
-            else { b.disabled = true; b.innerText = "Time Expired"; clearInterval(stealInterval); }
-        }, 1000);
-    }
-
-    if(role === "host") {
-        let bNext = document.createElement("button"); 
-        bNext.className="btn-main";
-        bNext.innerText=(idx+1 >= max) ? "Reveal the Bond" : "Next Round";
-        bNext.onclick = () => { 
-            clearInterval(stealInterval);
-            idx++;
-            conn.send({type:"NEXT", i:idx}); 
-            (idx >= max) ? showFinalScore() : round(); 
-        };
-        ctrl.appendChild(bNext);
+        scores[currentDesigner==='host'?'guest':'host'] += pts; 
+        conn.send({type:"SYNC", scores}); updatePoints(); 
+        const btn = document.createElement("button"); btn.className="btn-main";
+        btn.innerText = (idx + 1 >= max) ? "Final Results" : "Next Round";
+        btn.onclick = () => { idx++; conn.send({type:"NEXT", i:idx}); (idx>=max)?showFinal():round(); };
+        document.getElementById("controls").innerHTML = ""; document.getElementById("controls").appendChild(btn);
     }
     show("screen-results");
 }
 
-function showFinalScore() {
-    const winnerText = document.getElementById("winner-text");
-    const stats = document.getElementById("final-stats");
-    const controls = document.getElementById("post-game-controls");
-    controls.innerHTML = "";
+function showFinal() {
+    const win = (scores.host > scores.guest) ? "HOST WINS" : (scores.guest > scores.host ? "GUEST WINS" : "TIE");
+    document.getElementById("winner-text").innerText = win;
+    document.getElementById("final-stats").innerHTML = `<p>Host: ${scores.host} | Guest: ${scores.guest}</p>`;
     
-    let winner = "";
-    if(scores.host > scores.guest) winner = "HOST REIGNS 🥀";
-    else if(scores.guest > scores.host) winner = "GUEST REIGNS 🥀";
-    else winner = "SOUL BOUND 🤝";
-    
-    winnerText.innerText = winner;
-    stats.innerHTML = `<p>Host Heart: ${scores.host}</p><p>Guest Heart: ${scores.guest}</p>`;
-    
-    document.getElementById("live-points").classList.add("hidden");
-    show("screen-final");
-
-    if (role === "host") {
-        let btnNext = document.createElement("button");
-        btnNext.className = "btn-main";
-        btnNext.innerText = (mode === "custom") ? "Restart Custom Question" : "Next Round (Same Mode)";
+    const ctrl = document.getElementById("post-game-controls"); ctrl.innerHTML = "";
+    if(role === "host") {
+        const btnNext = document.createElement("button"); btnNext.className="btn-main";
+        btnNext.innerText = "Play Again";
         btnNext.onclick = () => {
             idx = 0;
-            if (mode !== "custom") {
-                let pool = (mode === 'chaos') ? [].concat(...Object.values(bank)) : [...bank[mode]];
-                deck = shuffle(pool).slice(0, max);
-            }
-            conn.send({ type: "START", mode, max, deck, i: 0 });
-            round();
+            if(mode === "custom") { deck = [deck[0]]; max = 1; }
+            else { deck = [].concat(...Object.values(bank)).sort(()=>Math.random()-.5).slice(0, max); }
+            conn.send({type:"START", mode, max, deck, i:0}); round();
         };
-        controls.appendChild(btnNext);
-
-        let btnSwap = document.createElement("button");
-        btnSwap.className = "btn-alt";
-        btnSwap.innerText = (mode === "custom") ? "Guest Sets Truth First" : "Give Guest Turn 1";
+        const btnSwap = document.createElement("button"); btnSwap.className="btn-alt";
+        btnSwap.innerText = "Swap: Guest Starts";
         btnSwap.onclick = () => {
-            // For custom mode with 1 question, we use idx=1 to toggle designer to Guest
-            // but we must make sure max is set to accommodate the index
-            let startIdx = 1;
-            let tempMax = (mode === "custom") ? 2 : max; 
-            
-            // Re-copy question for custom swap so index 1 exists
-            if (mode === "custom") {
-                deck = [deck[0], deck[0]];
-            } else {
-                let pool = (mode === 'chaos') ? [].concat(...Object.values(bank)) : [...bank[mode]];
-                deck = shuffle(pool).slice(0, max);
-            }
-
-            conn.send({ type: "START", mode, max: tempMax, deck, i: startIdx });
-            idx = startIdx;
-            max = tempMax;
-            round();
+            idx = 1; max = (mode === "custom") ? 2 : max;
+            if(mode === "custom") deck = [deck[0], deck[0]]; // Duplicate for index 1
+            conn.send({type:"START", mode, max, deck, i:idx}); round();
         };
-        controls.appendChild(btnSwap);
-
-        if (mode === "custom") {
-            let btnNew = document.createElement("button");
-            btnNew.className = "btn-outline";
-            btnNew.innerText = "Design New Question";
-            btnNew.onclick = () => show("screen-custom");
-            controls.appendChild(btnNew);
-        }
-    } else {
-        controls.innerHTML = "<p style='font-size:0.8rem; opacity:0.6;'>Waiting for Host...</p>";
+        ctrl.appendChild(btnNext); ctrl.appendChild(btnSwap);
     }
+    show("screen-final");
 }
 
-// DRAG AND DROP LOGIC
+// Simple Drag & Drop
 let active = null;
 document.addEventListener("pointerdown", e => { 
-    const item = e.target.closest(".rank-item");
-    if(item && !item.classList.contains("rank-preview") && !locked) { 
-        active = item; 
-        active.classList.add("active"); 
-        active.setPointerCapture(e.pointerId);
-    } 
+    active = e.target.closest(".rank-item"); 
+    if(active && !locked) active.classList.add("active"); 
 });
-
 document.addEventListener("pointermove", e => {
-    if(!active) return;
-    let target = document.elementFromPoint(e.clientX, e.clientY);
-    if(target) {
-        let itemUnder = target.closest(".rank-item");
-        if(itemUnder && itemUnder !== active && !itemUnder.classList.contains("rank-preview")) {
-            let rect = itemUnder.getBoundingClientRect();
-            let next = (e.clientY > rect.top + rect.height / 2);
-            if(next) itemUnder.after(active);
-            else itemUnder.before(active);
-        }
-    }
+    if(!active || locked) return;
+    const target = document.elementFromPoint(e.clientX, e.clientY)?.closest(".rank-item");
+    if(target && target !== active) target.after(active);
 });
-
-document.addEventListener("pointerup", e => { 
-    if(active) {
-        active.releasePointerCapture(e.pointerId);
-        active.classList.remove("active"); 
-        active = null; 
-    }
-});
+document.addEventListener("pointerup", () => { if(active) active.classList.remove("active"); active=null; });
 
 initGame();
 </script>
